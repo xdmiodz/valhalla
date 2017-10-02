@@ -888,5 +888,11 @@ std::vector<std::string> OSMWay::GetNames(const std::string& ref,
   return names;
 }
 
+// Checks if the this way are are equal to a supplied OSMWay (with exception
+// of way id).
+bool OSMWay::equal_attributes(const OSMWay& way2) const {
+  return road_class() == way2.road_class() && use() == way2.use();
+}
+
 }
 }

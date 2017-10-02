@@ -1002,6 +1002,14 @@ struct OSMWay {
                                     const UniqueNames& ref_offset_map,
                                     const UniqueNames& name_offset_map) const;
 
+  /**
+   * Checks if the this way are are equal to a supplied OSMWay (with exception
+   * of way id).
+   * @param  way2  Other way to compare against.
+   * @return  Returns true if the attributes are equal, false if not.
+   */
+  bool equal_attributes(const OSMWay& way2) const;
+
   // OSM way Id
   uint64_t osmwayid_;
 
