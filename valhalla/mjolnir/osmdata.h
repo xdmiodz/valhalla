@@ -35,6 +35,8 @@ struct OSMLaneConnectivity {
   std::string from_lanes;
 };
 
+using OSMRelationSet = std::unordered_set<uint64_t>;
+
 using RestrictionsMultiMap = std::unordered_multimap<uint64_t, OSMRestriction>;
 
 using ViaSet = std::unordered_set<uint64_t>;
@@ -46,6 +48,7 @@ using AccessRestrictionsMultiMap = std::unordered_multimap<uint64_t, OSMAccessRe
 using BikeMultiMap = std::unordered_multimap<uint64_t, OSMBike>;
 
 using OSMStringMap = std::unordered_map<uint64_t, std::string>;
+
 
 using OSMShapeMap = std::unordered_map<uint64_t, PointLL>;
 using OSMWayMap = std::unordered_map<uint64_t, std::list<uint64_t>>;
@@ -75,6 +78,9 @@ struct OSMData {
   size_t intersection_count;    // Count of intersection nodes
   size_t node_count;            // Count of all nodes
   size_t edge_count;            // Estimated count of edges
+
+  // List of ways used in any relation
+  OSMRelationSet relation_ways;
 
   // Stores simple restrictions. Indexed by the from way Id
   RestrictionsMultiMap restrictions;

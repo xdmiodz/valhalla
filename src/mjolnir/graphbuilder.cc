@@ -215,6 +215,7 @@ void ConstructEdges(const OSMData& osmdata, const std::string& ways_file,
 // Identify duplicate edges where overlapping ways with identical attributes occur.
 std::set<size_t> MarkDuplicateEdges(const std::string& ways_file, const std::string& way_nodes_file,
                                     const std::string& nodes_file, const std::string& edges_file,
+                                    const OSMData& osmdata,
                                     const std::map<GraphId, size_t>& tiles,
                                     DataQuality& stats) {
   LOG_INFO("Mark duplicate edges");
@@ -284,21 +285,27 @@ std::set<size_t> MarkDuplicateEdges(const std::string& ways_file, const std::str
 
         auto itr = node_map.find(target);
         if (itr != node_map.end()) {
-          // Compare this edge to prior edges ending at this node.
-          // TODO - need to account for relations (do not remove duplicates
-          // that are part of a relation)
+          // Compare this edge to prior edges ending at this node if this way
+          // is not part of a relation.
           const OSMWay way1 = *ways[edge1.wayindex_];
           uint64_t wayid1 = way1.way_id();
-          for (const auto& edge2 : itr->second) {
-            const OSMWay way2 = *ways[edge2.wayindex_];
-            uint64_t wayid2 = way2.way_id();
-            bool forward2 = edge2.sourcenode_ == node_id;
-            if (shape_match(edge1.llindex_, edge1.attributes.llcount, forward1,
-                            edge2.llindex_, edge2.attributes.llcount, forward2) &&
-                way1.equal_attributes(forward1, way2, forward2)) {
-              // Add to duplicate edge list and add to stats
-              duplicates.insert(edge_pair.second);
-              stats.AddDuplicate(wayid1, wayid2);
+          if (osmdata.relation_ways.find(wayid1) == osmdata.relation_ways.end()) {
+            for (const auto& edge2 : itr->second) {
+              // Check the way that this edge is derived from. Do not allow
+              // it to be marked as a duplicate if it is part of a relation.
+              // Otherwise shape and attributed must match to be a duplicate.
+              const OSMWay way2 = *ways[edge2.wayindex_];
+              uint64_t wayid2 = way2.way_id();
+              if (osmdata.relation_ways.find(wayid2) == osmdata.relation_ways.end()) {
+                bool forward2 = edge2.sourcenode_ == node_id;
+                if (shape_match(edge1.llindex_, edge1.attributes.llcount, forward1,
+                                edge2.llindex_, edge2.attributes.llcount, forward2) &&
+                    way1.equal_attributes(forward1, way2, forward2)) {
+                  // Add to duplicate edge list and add to stats
+                  duplicates.insert(edge_pair.second);
+                  stats.AddDuplicate(wayid1, wayid2);
+                }
+              }
             }
           }
         }
@@ -1094,7 +1101,7 @@ void GraphBuilder::Build(const boost::property_tree::ptree& pt, const OSMData& o
   // Identify duplicate edges
   DataQuality stats;
   auto duplicate_edges = MarkDuplicateEdges(ways_file, way_nodes_file, nodes_file,
-                                            edges_file, tiles, stats);
+                                            edges_file, osmdata, tiles, stats);
   stats.LogDuplicates();
 
   // Reclassify links (ramps). Cannot do this when building tiles since the

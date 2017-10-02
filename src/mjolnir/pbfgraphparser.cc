@@ -32,9 +32,6 @@ namespace {
 // Will throw an error if this is exceeded. Then we can increase.
 constexpr uint64_t kMaxOSMNodeId = 5500000000;
 
-// Absurd classification.
-constexpr uint32_t kAbsurdRoadClass = 777777;
-
 // Construct PBFGraphParser based on properties file and input PBF extract
 struct graph_callback : public OSMPBF::Callback {
  public:
@@ -876,6 +873,11 @@ struct graph_callback : public OSMPBF::Callback {
     if(osmid < last_relation_)
       throw std::runtime_error("Detected unsorted input data");
     last_relation_ = osmid;
+
+    // Identify ways included in the relation (for duplciate edge logic)
+    for (const auto& member : members) {
+      osmdata_.relation_ways.insert(member.member_id);
+    }
 
     OSMRestriction restriction{};
     uint64_t from_way_id = 0;
