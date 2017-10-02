@@ -18,6 +18,9 @@ DataQuality::DataQuality()
       forward_restrictions_count(0),
       reverse_restrictions_count(0),
       node_counts{} {
+  // Clear out the duplicates file
+  std::ofstream dupfile;
+  dupfile.open("duplicateways.txt", std::ofstream::out | std::ofstream::app);
 }
 
 // Add statistics (accumulate from several DataQuality objects)
@@ -72,7 +75,6 @@ void DataQuality::LogIssues() const {
   uint32_t duplicates = 0;
   std::vector<DuplicateWay> dups;
   if (duplicateways_.size() > 0) {
-    LOG_WARN("Duplicate Ways: count = " + std::to_string(duplicateways_.size()));
     for (const auto& dup : duplicateways_) {
       dups.emplace_back(DuplicateWay(dup.first.first, dup.first.second,
                                       dup.second));
