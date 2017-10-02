@@ -1005,10 +1005,13 @@ struct OSMWay {
   /**
    * Checks if the this way are are equal to a supplied OSMWay (with exception
    * of way id).
-   * @param  way2  Other way to compare against.
+   * @param  forward  Direction along the way, true if forward.
+   * @param  way2     Other way to compare against.
+   * @param  forward2 Direction along way2, true if forward.
    * @return  Returns true if the attributes are equal, false if not.
    */
-  bool equal_attributes(const OSMWay& way2) const;
+  bool equal_attributes(const bool forward, const OSMWay& way2,
+                        const bool forward2) const;
 
   // OSM way Id
   uint64_t osmwayid_;

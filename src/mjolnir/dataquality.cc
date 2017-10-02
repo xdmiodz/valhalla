@@ -36,20 +36,13 @@ void DataQuality::AddStatistics(const DataQuality& stats) {
 }
 
 // Adds an issue.
-void DataQuality::AddIssue(const DataIssueType issuetype, const GraphId& graphid,
-            const uint64_t wayid1, const uint64_t wayid2) {
-  if (issuetype == kDuplicateWays) {
-    std::pair<uint64_t, uint64_t> wayids = std::make_pair(wayid1, wayid2);
-    auto it = duplicateways_.find(wayids);
-    if (it == duplicateways_.end()) {
-      duplicateways_.emplace(wayids, 1);
-    } else {
-      it->second++;
-    }
-  } else if (issuetype == kUnconnectedLinkEdge) {
-    unconnectedlinks_.insert(wayid1);
-  } else if (issuetype == kIncompatibleLinkUse) {
-    incompatiblelinkuse_.insert(wayid1);
+void DataQuality::AddDuplicate(const uint64_t wayid1, const uint64_t wayid2) {
+  std::pair<uint64_t, uint64_t> wayids = std::make_pair(wayid1, wayid2);
+  auto it = duplicateways_.find(wayids);
+  if (it == duplicateways_.end()) {
+    duplicateways_.emplace(wayids, 1);
+  } else {
+    it->second++;
   }
 }
 
@@ -69,7 +62,7 @@ void DataQuality::LogStatistics() const {
 }
 
 // Logs issues
-void DataQuality::LogIssues() const {
+void DataQuality::LogDuplicates() const {
   // Log the duplicate ways - sort by number of duplicate edges
 
   uint32_t duplicates = 0;
@@ -94,22 +87,6 @@ void DataQuality::LogIssues() const {
             << dupway.edgecount << std::endl;
   }
   dupfile.close();
-
-  // Log the unconnected link edges
-  if (unconnectedlinks_.size() > 0) {
-    LOG_WARN("Link edges that are not connected. OSM Way Ids");
-    for (const auto& wayid : unconnectedlinks_) {
-      LOG_WARN(std::to_string(wayid));
-    }
-  }
-
-  // Log the links with incompatible use
-  if (incompatiblelinkuse_.size() > 0) {
-    LOG_WARN("Link edges that have incompatible use. OSM Way Ids:");
-    for (const auto& wayid : incompatiblelinkuse_) {
-      LOG_WARN(std::to_string(wayid));
-    }
-  }
 }
 
 }

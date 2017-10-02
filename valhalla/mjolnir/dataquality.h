@@ -13,12 +13,6 @@
 namespace valhalla {
 namespace mjolnir {
 
-enum DataIssueType {
-  kDuplicateWays       = 0,   // 2 ways that overlap between same 2 nodes
-  kUnconnectedLinkEdge = 1,   // Link (ramp) that is unconnected
-  kIncompatibleLinkUse = 2    // Link (ramp) that has incompatible use (e.g. driveway)
-};
-
 // Simple struct for holding duplicate ways to allow sorting by edgecount
 struct DuplicateWay {
   uint64_t wayid1;
@@ -55,10 +49,11 @@ class DataQuality {
   void AddStatistics(const DataQuality& stats);
 
   /**
-   * Adds an issue.
+   * Adds a duplicte edge report (gives the 2 way ids that overlap).
+   * @param  wayid1  Way Id of one edge.
+   * @param  wayid2  Way Id of the other edge.
    */
-  void AddIssue(const DataIssueType issuetype, const baldr::GraphId& graphid,
-                const uint64_t wayid1, const uint64_t wayid2);
+  void AddDuplicate(const uint64_t wayid1, const uint64_t wayid2);
 
   /**
    * Log simple statistics.
@@ -66,9 +61,9 @@ class DataQuality {
   void LogStatistics() const;
 
   /**
-   * Log issues.
+   * Log duplicates to a separate file.
    */
-  void LogIssues() const;
+  void LogDuplicates() const;
 
   // Public - simple stats
   uint32_t nodecount;
@@ -82,13 +77,7 @@ class DataQuality {
 
 
  protected:
-  // Unconnected links
-  std::unordered_set<uint64_t> unconnectedlinks_;
-
-  // Unconnected links
-  std::unordered_set<uint64_t> incompatiblelinkuse_;
-
-  // Duplicate way Ids
+  // Duplicate edges (overlapping ways)
   std::map<std::pair<uint64_t, uint64_t>, uint32_t> duplicateways_;
 };
 

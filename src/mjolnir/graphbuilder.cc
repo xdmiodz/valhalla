@@ -212,50 +212,107 @@ void ConstructEdges(const OSMData& osmdata, const std::string& ways_file,
   LOG_INFO("Finished with " + std::to_string(edges.size()) + " graph edges");
 }
 
-/*
-struct DuplicateEdgeInfo {
-  uint32_t edgeindex;
-  uint32_t length;
+// Identify duplicate edges where overlapping ways with identical attributes occur.
+std::set<size_t> MarkDuplicateEdges(const std::string& ways_file, const std::string& way_nodes_file,
+                                    const std::string& nodes_file, const std::string& edges_file,
+                                    const std::map<GraphId, size_t>& tiles,
+                                    DataQuality& stats) {
+  LOG_INFO("Mark duplicate edges");
+  sequence<OSMWayNode> way_nodes(way_nodes_file, false);
 
-  DuplicateEdgeInfo() : edgeindex(0), length(0) { }
-  DuplicateEdgeInfo(const uint32_t idx, const uint32_t l)
-      : edgeindex(idx),
-        length(l) {
-  }
-};
-
-void CheckForDuplicates(const GraphId& nodeid, const Node& node,
-                const std::vector<uint32_t>& edgelengths,
-                const std::unordered_map<GraphId, std::vector<Node>>& nodes,
-                const std::vector<Edge>& edges,
-                const std::vector<OSMWay>& ways, std::atomic<DataQuality*>& stats) {
-  uint32_t edgeindex;
-  GraphId endnode;
-  std::unordered_map<GraphId, DuplicateEdgeInfo> endnodes;
-  uint32_t n = 0;
-  for (auto edgeindex : node.edges) {
-    const Edge& edge = edges[edgeindex];
-    if (edge.sourcenode_ == nodeid) {
-      endnode = edge.targetnode_;
-    } else {
-      endnode = edge.sourcenode_;
+  // Method to get the shape for an edge - since LL is stored as a pair of
+  // floats we need to change into PointLL to get length of an edge
+  const auto shape_match = [&way_nodes](size_t idx1, const size_t count1, bool forward1,
+                                        size_t idx2, const size_t count2, bool forward2) {
+    if (count1 != count2) {
+      return false;
     }
 
-    // Check if the end node is already in the set of edges from this node
-    const auto en = endnodes.find(endnode);
-    if (en != endnodes.end() && en->second.length == edgelengths[n]) {
-      uint64_t wayid1 = ways[edges[en->second.edgeindex].wayindex_].way_id();
-      uint64_t wayid2 = ways[edges[edgeindex].wayindex_].way_id();
-      (*stats).AddIssue(kDuplicateWays, GraphId(), wayid1, wayid2);
-    } else {
-      endnodes.emplace(std::piecewise_construct,
-                       std::forward_as_tuple(endnode),
-                       std::forward_as_tuple(edgeindex, edgelengths[n]));
+    // Compare shape points, return false if any one doesn't match. Account
+    // for direction (forward/backward)
+    int inc1 = 1, inc2 = 1;
+    if (!forward1) {
+      inc1 = -1;
+      idx1 += count1;
     }
-    n++;
+    if (!forward2) {
+      inc2 = -1;
+      idx2 += count2;
+    }
+    for (size_t i = 0; i < count1; ++i) {
+      auto node1 = (*way_nodes[idx1]).node;
+      auto node2 = (*way_nodes[idx2]).node;
+      if (node1.lng != node2.lng || node1.lat != node2.lat) {
+        return false;
+      }
+      idx1 += inc1;
+      idx2 += inc2;
+    }
+    return true;
+  };
+
+  std::set<size_t> duplicates;
+  sequence<Edge> edges(edges_file, false);
+  sequence<Node> nodes(nodes_file, false);
+  sequence<OSMWay> ways(ways_file, false);
+  for (auto& tile : tiles) {
+    // Iterate over nodes in the tile
+    GraphId tile_id = tile.first.Tile_Base();
+    auto node_itr = nodes[tile.second];
+    while (node_itr != nodes.end() && (*node_itr).graph_id.Tile_Base() == tile_id) {
+      // Collect edges from this node
+      auto bundle = collect_node_edges(node_itr, nodes, edges);
+
+      // Go through the edges from the node. For any that end at the same end
+      // node, compare shape and attributes to see if they are duplicate.
+      std::unordered_map<uint32_t, std::vector<Edge>> node_map;
+      size_t node_id = node_itr.position();
+      for (const auto& edge_pair : bundle.node_edges) {
+        // Skip any prior duplicate edges
+        if (duplicates.find(edge_pair.second) != duplicates.end()) {
+          continue;
+        }
+
+        // Get the edge and its end node. Determine orientation along the
+        // edge (forward or reverse between the 2 nodes)
+        const Edge& edge1 = edge_pair.first;
+        bool forward1 = edge1.sourcenode_ == node_id;
+        uint32_t source = edge1.sourcenode_;
+        uint32_t target = edge1.targetnode_;
+        if (!forward1)
+          std::swap(source, target);
+
+        auto itr = node_map.find(target);
+        if (itr != node_map.end()) {
+          // Compare this edge to prior edges ending at this node.
+          // TODO - need to account for relations (do not remove duplicates
+          // that are part of a relation)
+          const OSMWay way1 = *ways[edge1.wayindex_];
+          uint64_t wayid1 = way1.way_id();
+          for (const auto& edge2 : itr->second) {
+            const OSMWay way2 = *ways[edge2.wayindex_];
+            uint64_t wayid2 = way2.way_id();
+            bool forward2 = edge2.sourcenode_ == node_id;
+            if (shape_match(edge1.llindex_, edge1.attributes.llcount, forward1,
+                            edge2.llindex_, edge2.attributes.llcount, forward2) &&
+                way1.equal_attributes(forward1, way2, forward2)) {
+              // Add to duplicate edge list and add to stats
+              duplicates.insert(edge_pair.second);
+              stats.AddDuplicate(wayid1, wayid2);
+            }
+          }
+        }
+
+        // Add the way index to the map
+        node_map[target].push_back(edge1);
+      }
+      node_itr++;
+    }
   }
+  LOG_INFO("Found " + std::to_string(duplicates.size()) + " duplicate edges");
+  return duplicates;
 }
-*/
+
 uint32_t CreateSimpleTurnRestriction(const uint64_t wayid, const size_t endnode,
     sequence<Node>& nodes, sequence<Edge>& edges, const OSMData& osmdata,
     sequence<OSMWay>& ways, DataQuality& stats) {
@@ -359,6 +416,7 @@ uint32_t AddAccessRestrictions(const uint32_t edgeid, const uint64_t wayid,
 void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_file,
     const std::string& nodes_file, const std::string& edges_file,
     const std::string& complex_restriction_file,
+    const std::set<size_t>& duplicate_edges,
     const std::string tile_dir, const OSMData& osmdata,
     const std::unique_ptr<const valhalla::skadi::sample>& sample,
     std::map<GraphId, size_t>::const_iterator tile_start,
@@ -482,9 +540,6 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
                       admin_polys.begin()->first :
                       GetMultiPolyId(admin_polys, node_ll);
 
-        // Look for potential duplicates
-        //CheckForDuplicates(nodeid, node, edgelengths, nodes, edges, osmdata.ways, stats);
-
         // it is a fork if more than two edges and more than one driveforward edge and
         //   if all the edges are links
         //   OR the node is a motorway_junction and none of the edges are links
@@ -500,6 +555,11 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
         uint32_t n = 0;
         RoadClass bestclass = RoadClass::kServiceOther;
         for (const auto& edge_pair : bundle.node_edges) {
+          // Skip if this is a duplicate edge
+          if (duplicate_edges.find(edge_pair.second) != duplicate_edges.end()) {
+            continue;
+          }
+
           // Get the edge and way
           const Edge& edge = edge_pair.first;
           const OSMWay w = *ways[edge.wayindex_];
@@ -892,8 +952,8 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
         // from the node. Increment directed edge count.
         graphtile.nodes().emplace_back(node_ll, bestclass, node.access_mask(),
                                        node.type(), node.traffic_signal());
-        graphtile.nodes().back().set_edge_index(graphtile.directededges().size() - bundle.node_edges.size());
-        graphtile.nodes().back().set_edge_count(bundle.node_edges.size());
+        graphtile.nodes().back().set_edge_index(graphtile.directededges().size() - n);
+        graphtile.nodes().back().set_edge_count(n);
         if (fork) {
           graphtile.nodes().back().set_intersection(IntersectionType::kFork);
         }
@@ -945,6 +1005,7 @@ void BuildLocalTiles(const unsigned int thread_count, const OSMData& osmdata,
   const std::string& ways_file, const std::string& way_nodes_file,
   const std::string& nodes_file, const std::string& edges_file,
   const std::string& complex_restriction_file,
+  const std::set<size_t>& duplicate_edges,
   const std::map<GraphId, size_t>& tiles, const std::string& tile_dir, DataQuality& stats,
   const std::unique_ptr<const valhalla::skadi::sample>& sample, const boost::property_tree::ptree& pt) {
 
@@ -976,7 +1037,7 @@ void BuildLocalTiles(const unsigned int thread_count, const OSMData& osmdata,
     threads[i].reset(
       new std::thread(BuildTileSet,  std::cref(ways_file), std::cref(way_nodes_file),
                       std::cref(nodes_file), std::cref(edges_file),
-                      std::cref(complex_restriction_file), std::cref(tile_dir),
+                      std::cref(complex_restriction_file), std::cref(duplicate_edges), std::cref(tile_dir),
                       std::cref(osmdata), std::cref(sample), tile_start, tile_end, tile_creation_date,
                       std::cref(pt.get_child("mjolnir")), std::ref(results[i]))
     );
@@ -996,7 +1057,6 @@ void BuildLocalTiles(const unsigned int thread_count, const OSMData& osmdata,
       // Add statistics and log issues on this thread
       const auto& stat = result.get_future().get();
       stats.AddStatistics(stat);
-      stat.LogIssues();
     }
     catch(std::exception& e) {
       //TODO: throw further up the chain?
@@ -1031,9 +1091,14 @@ void GraphBuilder::Build(const boost::property_tree::ptree& pt, const OSMData& o
   // Line up the nodes and then re-map the edges that the edges to them
   auto tiles = SortGraph(nodes_file, edges_file, level);
 
+  // Identify duplicate edges
+  DataQuality stats;
+  auto duplicate_edges = MarkDuplicateEdges(ways_file, way_nodes_file, nodes_file,
+                                            edges_file, tiles, stats);
+  stats.LogDuplicates();
+
   // Reclassify links (ramps). Cannot do this when building tiles since the
   // edge list needs to be modified
-  DataQuality stats;
   if (pt.get<bool>("mjolnir.reclassify_links", true)) {
     ReclassifyLinks(ways_file, nodes_file, edges_file, way_nodes_file);
   } else {
@@ -1058,7 +1123,7 @@ void GraphBuilder::Build(const boost::property_tree::ptree& pt, const OSMData& o
 
   // Build tiles at the local level. Form connected graph from nodes and edges.
   BuildLocalTiles(threads, osmdata, ways_file, way_nodes_file, nodes_file,
-                  edges_file, complex_restriction_file, tiles,
+                  edges_file, complex_restriction_file, duplicate_edges, tiles,
                   tile_dir, stats, sample, pt);
 
   stats.LogStatistics();

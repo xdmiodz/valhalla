@@ -890,8 +890,43 @@ std::vector<std::string> OSMWay::GetNames(const std::string& ref,
 
 // Checks if the this way are are equal to a supplied OSMWay (with exception
 // of way id).
-bool OSMWay::equal_attributes(const OSMWay& way2) const {
-  return road_class() == way2.road_class() && use() == way2.use();
+bool OSMWay::equal_attributes(const bool forward, const OSMWay& way2, const bool forward2) const {
+  // TODO - compare other attributes
+  if (road_class() != way2.road_class() || use() != way2.use() ||
+      link() != way2.link()) {
+    return false;
+  }
+
+  // Compare access (consider direction)
+  if ((forward && forward2) || (!forward && !forward2)) {
+    if (auto_forward() != way2.auto_forward() || auto_backward() != way2.auto_backward() ||
+        bus_forward() != way2.bus_forward() || bus_backward() != way2.bus_backward() ||
+        taxi_forward() != way2.taxi_forward() || taxi_backward() != way2.taxi_backward() ||
+        truck_forward() != way2.truck_forward() || truck_backward() != way2.truck_backward() ||
+        bike_forward() != way2.bike_forward() || bike_backward() != way2.bike_backward() ||
+        emergency_forward() != way2.emergency_forward() || emergency_backward() != way2.emergency_backward() ||
+        hov_forward() != way2.hov_forward() || hov_backward() != way2.hov_backward()) {
+      return false;
+    }
+  } else {
+    if (auto_forward() != way2.auto_backward() || auto_backward() != way2.auto_forward() ||
+        bus_forward() != way2.bus_backward() || bus_backward() != way2.bus_forward() ||
+        taxi_forward() != way2.taxi_backward() || taxi_backward() != way2.taxi_forward() ||
+        truck_forward() != way2.truck_backward() || truck_backward() != way2.truck_forward() ||
+        bike_forward() != way2.bike_backward() || bike_backward() != way2.bike_forward() ||
+        emergency_forward() != way2.emergency_backward() || emergency_backward() != way2.emergency_forward() ||
+        hov_forward() != way2.hov_backward() || hov_backward() != way2.hov_forward()) {
+      return false;
+    }
+  }
+
+  // Names
+  if (name_index() != way2.name_index() || alt_name_index() != way2.alt_name_index() ||
+      official_name_index() != way2.official_name_index() || ref_index() != way2.ref_index()) {
+    return false;
+  }
+
+  return true;
 }
 
 }
