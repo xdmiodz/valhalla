@@ -289,22 +289,22 @@ std::unordered_set<size_t> MarkDuplicateEdges(const std::string& ways_file, cons
           // is not part of a relation.
           const OSMWay way1 = *ways[edge1.wayindex_];
           uint64_t wayid1 = way1.way_id();
-          if (osmdata.relation_ways.find(wayid1) == osmdata.relation_ways.end()) {
-            for (const auto& edge2 : itr->second) {
-              // Check the way that this edge is derived from. Do not allow
-              // it to be marked as a duplicate if it is part of a relation.
-              // Otherwise shape and attributed must match to be a duplicate.
-              const OSMWay way2 = *ways[edge2.wayindex_];
-              uint64_t wayid2 = way2.way_id();
-              if (osmdata.relation_ways.find(wayid2) == osmdata.relation_ways.end()) {
-                bool forward2 = edge2.sourcenode_ == node_id;
-                if (shape_match(edge1.llindex_, edge1.attributes.llcount, forward1,
-                                edge2.llindex_, edge2.attributes.llcount, forward2) &&
-                    way1.equal_attributes(forward1, way2, forward2)) {
-                  // Add to duplicate edge list and add to stats
-                  duplicates.insert(edge_pair.second);
-                  stats.AddDuplicate(wayid1, wayid2);
-                }
+          for (const auto& edge2 : itr->second) {
+            // Check the way that this edge is derived from. Do not allow
+            // it to be marked as a duplicate if it is part of a relation.
+            // Otherwise shape and attributed must match to be a duplicate.
+            const OSMWay way2 = *ways[edge2.wayindex_];
+            uint64_t wayid2 = way2.way_id();
+            if (wayid1 == wayid2 ||
+                (osmdata.relation_ways.find(wayid1) == osmdata.relation_ways.end() &&
+                 osmdata.relation_ways.find(wayid2) == osmdata.relation_ways.end())) {
+              bool forward2 = edge2.sourcenode_ == node_id;
+              if (shape_match(edge1.llindex_, edge1.attributes.llcount, forward1,
+                              edge2.llindex_, edge2.attributes.llcount, forward2) &&
+                  way1.equal_attributes(forward1, way2, forward2)) {
+                // Add to duplicate edge list and add to stats
+                duplicates.insert(edge_pair.second);
+                stats.AddDuplicate(wayid1, wayid2);
               }
             }
           }
