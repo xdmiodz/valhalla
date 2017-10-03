@@ -292,7 +292,7 @@ bool CanContract(GraphReader& reader, const GraphTile* tile,
     return false;
   }
 
-  // Do not allow shortcut on ferries
+  // Do not create shortcuts on ferries
   if (edge1->use() == Use::kFerry && edge2->use() == Use::kFerry) {
     return false;
   }
