@@ -292,6 +292,11 @@ bool CanContract(GraphReader& reader, const GraphTile* tile,
     return false;
   }
 
+  // Do not allow shortcut on ferries
+  if (edge1->use() == Use::kFerry && edge2->use() == Use::kFerry) {
+    return false;
+  }
+
   // Cannot have turn restriction from either inbound edge edge to
   // the other outbound edge
   if (((oppdiredge1->restrictions() & (1 << edge2->localedgeidx())) != 0) ||
