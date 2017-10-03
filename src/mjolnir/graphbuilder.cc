@@ -213,7 +213,7 @@ void ConstructEdges(const OSMData& osmdata, const std::string& ways_file,
 }
 
 // Identify duplicate edges where overlapping ways with identical attributes occur.
-std::set<size_t> MarkDuplicateEdges(const std::string& ways_file, const std::string& way_nodes_file,
+std::unordered_set<size_t> MarkDuplicateEdges(const std::string& ways_file, const std::string& way_nodes_file,
                                     const std::string& nodes_file, const std::string& edges_file,
                                     const OSMData& osmdata,
                                     const std::map<GraphId, size_t>& tiles,
@@ -252,7 +252,7 @@ std::set<size_t> MarkDuplicateEdges(const std::string& ways_file, const std::str
     return true;
   };
 
-  std::set<size_t> duplicates;
+  std::unordered_set<size_t> duplicates;
   sequence<Edge> edges(edges_file, false);
   sequence<Node> nodes(nodes_file, false);
   sequence<OSMWay> ways(ways_file, false);
@@ -423,7 +423,7 @@ uint32_t AddAccessRestrictions(const uint32_t edgeid, const uint64_t wayid,
 void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_file,
     const std::string& nodes_file, const std::string& edges_file,
     const std::string& complex_restriction_file,
-    const std::set<size_t>& duplicate_edges,
+    const std::unordered_set<size_t>& duplicate_edges,
     const std::string tile_dir, const OSMData& osmdata,
     const std::unique_ptr<const valhalla::skadi::sample>& sample,
     std::map<GraphId, size_t>::const_iterator tile_start,
@@ -1012,7 +1012,7 @@ void BuildLocalTiles(const unsigned int thread_count, const OSMData& osmdata,
   const std::string& ways_file, const std::string& way_nodes_file,
   const std::string& nodes_file, const std::string& edges_file,
   const std::string& complex_restriction_file,
-  const std::set<size_t>& duplicate_edges,
+  const std::unordered_set<size_t>& duplicate_edges,
   const std::map<GraphId, size_t>& tiles, const std::string& tile_dir, DataQuality& stats,
   const std::unique_ptr<const valhalla::skadi::sample>& sample, const boost::property_tree::ptree& pt) {
 
