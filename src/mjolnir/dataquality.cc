@@ -64,17 +64,12 @@ void DataQuality::LogStatistics() const {
 // Logs issues
 void DataQuality::LogDuplicates() const {
   // Log the duplicate ways - sort by number of duplicate edges
-
-  uint32_t duplicates = 0;
   std::vector<DuplicateWay> dups;
   if (duplicateways_.size() > 0) {
     for (const auto& dup : duplicateways_) {
       dups.emplace_back(DuplicateWay(dup.first.first, dup.first.second,
                                       dup.second));
-      duplicates += dup.second;
     }
-    LOG_WARN("Duplicate ways " + std::to_string(duplicateways_.size()) +
-             " duplicate edges = " + std::to_string(duplicates));
   }
 
   // Sort by edgecount and write to separate file
