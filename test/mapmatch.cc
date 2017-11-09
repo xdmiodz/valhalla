@@ -457,7 +457,7 @@ namespace {
       std::string streets;
       for(const auto& n : names)
         streets += n + ", ";
-      throw std::logic_error("The second most obvious result is fronatge road to the right - but got: " + streets);
+      throw std::logic_error("The second most obvious result is frontage road to the right - but got: " + streets);
     }
     if(alternate.get<float>("confidence_score") >= 1.0f)
       throw std::logic_error("Confidence of the second result is always less than 1");
