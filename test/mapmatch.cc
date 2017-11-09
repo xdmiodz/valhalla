@@ -375,14 +375,14 @@ namespace {
     auto matched = json_to_pt(actor.trace_attributes(
         R"({"costing":"auto","best_paths":2,"shape_match":"map_snap","shape":[
            {"lat":52.079559,"lon":5.137405,"accuracy":10},
-           {"lat":52.07953897174955,"lon":5.137599706649781,"accuracy":10},
-           {"lat":52.079542268543484,"lon":5.137838423252107,"accuracy":10},
-           {"lat":52.07956040090567,"lon":5.138160288333893,"accuracy":10},
-           {"lat":52.07957358807355,"lon":5.138508975505829,"accuracy":10},
-           {"lat":52.07959666560798,"lon":5.138905942440034,"accuracy":10},
-           {"lat":52.0796213915245,"lon":5.139262676239015,"accuracy":10},
-           {"lat":52.079637875461195,"lon":5.139581859111787,"accuracy":10},
-           {"lat":52.07964776582031,"lon":5.139828622341157,"accuracy":10}]})"));
+           {"lat":52.079539,"lon":5.137600,"accuracy":10},
+           {"lat":52.079542,"lon":5.137838,"accuracy":10},
+           {"lat":52.079560,"lon":5.138160,"accuracy":10},
+           {"lat":52.079574,"lon":5.138509,"accuracy":10},
+           {"lat":52.079597,"lon":5.138906,"accuracy":10},
+           {"lat":52.079621,"lon":5.139263,"accuracy":10},
+           {"lat":52.079638,"lon":5.139582,"accuracy":10},
+           {"lat":52.079648,"lon":5.139829,"accuracy":10}]})"));
 
     /*** Primary path - stay straight on the same road
      {"type":"FeatureCollection","features":[
