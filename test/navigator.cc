@@ -35836,6 +35836,958 @@ void TestPedestrianCatalinasToOffice() {
    TryUsedInstructions(
        std::get<kFinalTransitionAlert>(nav.used_instructions().at(instruction_index)),
        true);
+
+   //----------------------------------------------------------------
+   // reset the route
+   nav.SetRoute(route_json_str);
+
+   //----------------------------------------------------------------
+   // trace point = 0 | Pre | Walk east on West Orange Street for 400 feet.
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.307518f, 40.0392227f, 1497545430, 0),
+       GetNavigationStatus(NavigationStatus_RouteState_kPreTransition,
+           -76.3075409f, 40.0393639f, leg_index, 0.610896409f, 693,
+           maneuver_index, 0.0833536983f, 95, instruction_index), true);
+   //----------------------------------------------------------------
+   // trace point = 1 | TODO fix Alert | In 500 feet Turn left onto North Queen Street.
+   maneuver_index = 0;
+   instruction_index = maneuver_index + 1;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3074112f, 40.039257f, 1497545442, 0.823583007),
+       GetNavigationStatus(NavigationStatus_RouteState_kTransitionAlert,
+           -76.3074341f, 40.0393753f, leg_index, 0.605184913f, 686,
+           maneuver_index, 0.0776422024f, 88, instruction_index,
+           kFinalShortTransitionAlertImperialLength), true);
+   //----------------------------------------------------------------
+   // trace point = 2
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3073273f, 40.0393181f, 1497545449, 1.40079796),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3073425f, 40.0393867f, leg_index, 0.600274622f, 681,
+           maneuver_index, 0.0727319121f, 83), true);
+   //----------------------------------------------------------------
+   // trace point = 3
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3072052f, 40.0393448f, 1497545454, 2.24081302),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3072128f, 40.0393982f, leg_index, 0.593361795f, 673,
+           maneuver_index, 0.0658190846f, 75));
+   //----------------------------------------------------------------
+   // trace point = 4
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3070984f, 40.0393715f, 1497545459, 1.830966),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.307106f, 40.0394096f, leg_index, 0.587649822f, 666,
+           maneuver_index, 0.0601071119f, 68));
+   //----------------------------------------------------------------
+   // trace point = 5
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3069992f, 40.0394135f, 1497545467, 1.22730005),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3069992f, 40.0394211f, leg_index, 0.581938446f, 660,
+           maneuver_index, 0.0543957353f, 62));
+   //----------------------------------------------------------------
+   // trace point = 6
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3068924f, 40.0394516f, 1497545478, 0.925176978),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3068924f, 40.0394363f, leg_index, 0.576186955f, 653,
+           maneuver_index, 0.0486442447f, 55));
+   //----------------------------------------------------------------
+   // trace point = 7
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3068008f, 40.0395088f, 1497545485, 1.40342498),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3067856f, 40.0394478f, leg_index, 0.570475876f, 647,
+           maneuver_index, 0.042933166f, 49));
+   //----------------------------------------------------------------
+   // trace point = 8
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3067093f, 40.0395622f, 1497545494, 1.09789395),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3066864f, 40.0394592f, leg_index, 0.565164208f, 641,
+           maneuver_index, 0.0376214981f, 43));
+   //----------------------------------------------------------------
+   // trace point = 9
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3066101f, 40.0396004f, 1497545500, 1.60829997),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3065872f, 40.0394707f, leg_index, 0.5598526f, 635,
+           maneuver_index, 0.0323098898f, 37));
+   //----------------------------------------------------------------
+   // trace point = 10
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3065033f, 40.0395966f, 1497545506, 1.50749099),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3064804f, 40.0394821f, leg_index, 0.554142058f, 628,
+           maneuver_index, 0.0265993476f, 30));
+   //----------------------------------------------------------------
+   // trace point = 11
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3063965f, 40.0396233f, 1497545514, 1.20021904),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3063736f, 40.0394974f, leg_index, 0.54839021f, 622,
+           maneuver_index, 0.0208474994f, 24));
+   //----------------------------------------------------------------
+   // trace point = 12
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3062897f, 40.0396652f, 1497545522, 1.32216299),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3062592f, 40.0395088f, leg_index, 0.542280436f, 615,
+           maneuver_index, 0.0147377253f, 17));
+   //----------------------------------------------------------------
+   // trace point = 13
+   maneuver_index = 0;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3061676f, 40.0396385f, 1497545529, 1.51381195),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061447f, 40.0395241f, leg_index, 0.536129236f, 608,
+           maneuver_index, 0.00858652592f, 10));
+   //----------------------------------------------------------------
+   // trace point = 14
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3060684f, 40.0396194f, 1497545539, 0.90040803),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3059998f, 40.0396271f, leg_index, 0.521681905f, 592,
+           maneuver_index, 0.104568779f, 119));
+   //----------------------------------------------------------------
+   // trace point = 15
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3059998f, 40.0396843f, 1497545561, 0.429333001),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.306015f, 40.0396843f, leg_index, 0.517648399f, 587,
+           maneuver_index, 0.100535274f, 114));
+   //----------------------------------------------------------------
+   // trace point = 16
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3059921f, 40.0397835f, 1497545566, 2.14066195),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3060303f, 40.0397797f, leg_index, 0.511004388f, 580,
+           maneuver_index, 0.093891263f, 107));
+   //----------------------------------------------------------------
+   // trace point = 17
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.306015f, 40.0398636f, 1497545570, 2.3856771),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3060455f, 40.0398598f, leg_index, 0.505404592f, 573,
+           maneuver_index, 0.0882914662f, 100));
+   //----------------------------------------------------------------
+   // trace point = 18
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3060913f, 40.0399399f, 1497545575, 2.10640597),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3060608f, 40.0399437f, leg_index, 0.499543786f, 567,
+           maneuver_index, 0.0824306607f, 94));
+   //----------------------------------------------------------------
+   // trace point = 19
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3061523f, 40.0400085f, 1497545580, 1.818712),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.306076f, 40.0400162f, leg_index, 0.494466007f, 561,
+           maneuver_index, 0.0773528814f, 88));
+   //----------------------------------------------------------------
+   // trace point = 20
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3061523f, 40.0401001f, 1497545587, 1.46310699),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3060913f, 40.0401077f, leg_index, 0.488083303f, 554,
+           maneuver_index, 0.0709701777f, 81));
+   //----------------------------------------------------------------
+   // trace point = 21
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3061829f, 40.0401802f, 1497545593, 1.57004797),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061066f, 40.0401878f, leg_index, 0.482483506f, 547,
+           maneuver_index, 0.0653703809f, 74));
+   //----------------------------------------------------------------
+   // trace point = 22
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3062134f, 40.0402641f, 1497545598, 1.88275301),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061295f, 40.0402756f, leg_index, 0.476302654f, 540,
+           maneuver_index, 0.0591895282f, 67));
+   //----------------------------------------------------------------
+   // trace point = 23
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.306221f, 40.0403633f, 1497545606, 1.37179601),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061447f, 40.0403709f, leg_index, 0.469658524f, 533,
+           maneuver_index, 0.0525453985f, 60));
+   //----------------------------------------------------------------
+   // trace point = 24
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.306221f, 40.0404434f, 1497545611, 1.80337596),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.30616f, 40.040451f, leg_index, 0.464058757f, 526,
+           maneuver_index, 0.0469456315f, 53));
+   //----------------------------------------------------------------
+   // trace point = 25
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.306221f, 40.0405312f, 1497545618, 1.41665602),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061752f, 40.040535f, leg_index, 0.458198011f, 520,
+           maneuver_index, 0.0410848856f, 47));
+   //----------------------------------------------------------------
+   // trace point = 26
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3062668f, 40.0406113f, 1497545623, 1.98192704),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061905f, 40.0406189f, leg_index, 0.452337235f, 513,
+           maneuver_index, 0.0352241099f, 40));
+   //----------------------------------------------------------------
+   // trace point = 27
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3062973f, 40.040699f, 1497545630, 1.42205799),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3062134f, 40.0407104f, leg_index, 0.445895553f, 506,
+           maneuver_index, 0.0287824273f, 33));
+   //----------------------------------------------------------------
+   // trace point = 28
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3063126f, 40.0407829f, 1497545637, 1.36570096),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3062286f, 40.0407944f, leg_index, 0.440034747f, 499,
+           maneuver_index, 0.0229216218f, 26));
+   //----------------------------------------------------------------
+   // trace point = 29
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3062515f, 40.0408592f, 1497545645, 1.27573204),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3062363f, 40.0408592f, leg_index, 0.435538232f, 494,
+           maneuver_index, 0.018425107f, 21));
+   //----------------------------------------------------------------
+   // trace point = 30
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3062134f, 40.0409431f, 1497545651, 1.57004595),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3062515f, 40.0409393f, leg_index, 0.429938823f, 488,
+           maneuver_index, 0.0128256977f, 15));
+   //----------------------------------------------------------------
+   // trace point = 31
+   maneuver_index = 1;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3062592f, 40.0410194f, 1497545660, 1.05854595),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3062668f, 40.0410194f, leg_index, 0.424339741f, 481,
+           maneuver_index, 0.00722661614f, 8));
+   //----------------------------------------------------------------
+   // trace point = 32
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3061752f, 40.0410767f, 1497545668, 1.22094595),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061829f, 40.0411339f, leg_index, 0.411401778f, 467,
+           maneuver_index, 0.335923225f, 382));
+   //----------------------------------------------------------------
+   // trace point = 33
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3061218f, 40.041172f, 1497545674, 1.88847005),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3061142f, 40.0411415f, leg_index, 0.407727778f, 463,
+           maneuver_index, 0.332249224f, 378));
+   //----------------------------------------------------------------
+   // trace point = 34
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3060074f, 40.0412178f, 1497545681, 1.59787595),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3059998f, 40.041153f, leg_index, 0.401615947f, 456,
+           maneuver_index, 0.326137394f, 371));
+   //----------------------------------------------------------------
+   // trace point = 35
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3059082f, 40.0412712f, 1497545686, 2.03123808),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3058929f, 40.0411644f, leg_index, 0.39590469f, 449,
+           maneuver_index, 0.320426136f, 364));
+   //----------------------------------------------------------------
+   // trace point = 36
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3058167f, 40.0412331f, 1497545693, 1.32659698),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.305809f, 40.041172f, leg_index, 0.391429543f, 444,
+           maneuver_index, 0.31595099f, 359));
+   //----------------------------------------------------------------
+   // trace point = 37
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3056946f, 40.0412407f, 1497545700, 1.45099103),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.305687f, 40.0411835f, leg_index, 0.384917349f, 437,
+           maneuver_index, 0.309438795f, 352));
+   //----------------------------------------------------------------
+   // trace point = 38
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3056564f, 40.041317f, 1497545705, 1.84180498),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3056335f, 40.0411911f, leg_index, 0.382044405f, 433,
+           maneuver_index, 0.306565851f, 348));
+   //----------------------------------------------------------------
+   // trace point = 39
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3055496f, 40.0410843f, 1497545709, 6.84258413),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3055725f, 40.0411949f, leg_index, 0.378805667f, 430,
+           maneuver_index, 0.303327113f, 345));
+   //----------------------------------------------------------------
+   // trace point = 40
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3054657f, 40.0411377f, 1497545714, 1.86769104),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.305481f, 40.0412064f, leg_index, 0.373895288f, 424,
+           maneuver_index, 0.298416734f, 339));
+   //----------------------------------------------------------------
+   // trace point = 41
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3054276f, 40.0412292f, 1497545717, 3.62695694),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3054276f, 40.0412102f, leg_index, 0.371056914f, 421,
+           maneuver_index, 0.295578361f, 336));
+   //----------------------------------------------------------------
+   // trace point = 42
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3053665f, 40.0412979f, 1497545722, 1.82808495),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3053513f, 40.0412178f, leg_index, 0.366982222f, 416,
+           maneuver_index, 0.291503668f, 331));
+   //----------------------------------------------------------------
+   // trace point = 43
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3052597f, 40.0412827f, 1497545729, 1.32159901),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3052521f, 40.0412292f, leg_index, 0.361671537f, 410,
+           maneuver_index, 0.286192983f, 325));
+   //----------------------------------------------------------------
+   // trace point = 44
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3051605f, 40.0413284f, 1497545735, 1.64760196),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3051453f, 40.0412407f, leg_index, 0.35596019f, 403,
+           maneuver_index, 0.280481637f, 318));
+   //----------------------------------------------------------------
+   // trace point = 45
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3050537f, 40.0413437f, 1497545741, 1.52482104),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3050385f, 40.0412521f, leg_index, 0.350248843f, 397,
+           maneuver_index, 0.27477029f, 312));
+   //----------------------------------------------------------------
+   // trace point = 46
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3049545f, 40.0413933f, 1497545748, 1.46080995),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3049316f, 40.0412636f, leg_index, 0.344537616f, 390,
+           maneuver_index, 0.269059062f, 305));
+   //----------------------------------------------------------------
+   // trace point = 47
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3048401f, 40.0414047f, 1497545757, 1.07864904),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3048172f, 40.041275f, leg_index, 0.338425726f, 383,
+           maneuver_index, 0.262947172f, 298));
+   //----------------------------------------------------------------
+   // trace point = 48
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3047333f, 40.0413704f, 1497545764, 1.40069997),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.304718f, 40.0412827f, leg_index, 0.333150148f, 377,
+           maneuver_index, 0.257671595f, 292));
+   //----------------------------------------------------------------
+   // trace point = 49
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3046265f, 40.0413666f, 1497545771, 1.37612605),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3046112f, 40.0412941f, leg_index, 0.327438772f, 371,
+           maneuver_index, 0.251960218f, 286));
+   //----------------------------------------------------------------
+   // trace point = 50
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3045044f, 40.0413818f, 1497545777, 1.665223),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3044891f, 40.0413094f, leg_index, 0.320891559f, 363,
+           maneuver_index, 0.245413005f, 278));
+   //----------------------------------------------------------------
+   // trace point = 51
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.30439f, 40.0413704f, 1497545784, 1.485466),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3043823f, 40.0413208f, leg_index, 0.315180928f, 357,
+           maneuver_index, 0.239702374f, 272));
+   //----------------------------------------------------------------
+   // trace point = 52
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.304306f, 40.0414314f, 1497545799, 0.653492987),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3042908f, 40.0413284f, leg_index, 0.310304523f, 351,
+           maneuver_index, 0.234825969f, 266));
+   //----------------------------------------------------------------
+   // trace point = 53
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.304184f, 40.0414276f, 1497545837, 0.274381012),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3041687f, 40.0413399f, leg_index, 0.303792506f, 344,
+           maneuver_index, 0.228313953f, 259));
+   //----------------------------------------------------------------
+   // trace point = 54
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3040771f, 40.0414391f, 1497545846, 1.06526303),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3040619f, 40.0413513f, leg_index, 0.2980811f, 338,
+           maneuver_index, 0.222602546f, 253));
+   //----------------------------------------------------------------
+   // trace point = 55
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3039703f, 40.04142f, 1497545853, 1.29771602),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3039627f, 40.0413628f, leg_index, 0.292770058f, 332,
+           maneuver_index, 0.217291504f, 247));
+   //----------------------------------------------------------------
+   // trace point = 56
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3038483f, 40.0414238f, 1497545859, 1.73645794),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3038406f, 40.0413742f, leg_index, 0.286258072f, 324,
+           maneuver_index, 0.210779518f, 239));
+   //----------------------------------------------------------------
+   // trace point = 57
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3037338f, 40.04142f, 1497545869, 0.965344012),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3037262f, 40.0413857f, leg_index, 0.28014636f, 317,
+           maneuver_index, 0.204667807f, 232));
+   //----------------------------------------------------------------
+   // trace point = 58
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3036194f, 40.04142f, 1497545874, 2.0458591),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3036118f, 40.0413971f, leg_index, 0.274034888f, 310,
+           maneuver_index, 0.198556334f, 225));
+   //----------------------------------------------------------------
+   // trace point = 59
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3035126f, 40.0414391f, 1497545880, 1.55220902),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3035049f, 40.0414085f, leg_index, 0.26832363f, 304,
+           maneuver_index, 0.192845076f, 219));
+   //----------------------------------------------------------------
+   // trace point = 60
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3033676f, 40.0414352f, 1497545886, 1.98933697),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3033676f, 40.0414238f, leg_index, 0.260975212f, 295,
+           maneuver_index, 0.185496658f, 210));
+   //----------------------------------------------------------------
+   // trace point = 61
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3032532f, 40.0413895f, 1497545892, 1.87250197),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3032608f, 40.0414352f, leg_index, 0.255263507f, 289,
+           maneuver_index, 0.179784954f, 204));
+   //----------------------------------------------------------------
+   // trace point = 62
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.303154f, 40.0414429f, 1497545905, 0.775683999),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.303154f, 40.0414467f, leg_index, 0.249552399f, 283,
+           maneuver_index, 0.174073845f, 198));
+   //----------------------------------------------------------------
+   // trace point = 63
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3030472f, 40.0414848f, 1497545913, 1.32858002),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3030396f, 40.0414581f, leg_index, 0.243440643f, 276,
+           maneuver_index, 0.167962089f, 191));
+   //----------------------------------------------------------------
+   // trace point = 64
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.302948f, 40.0414505f, 1497545928, 0.606131017),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.302948f, 40.0414658f, leg_index, 0.23856473f, 270,
+           maneuver_index, 0.163086176f, 185));
+   //----------------------------------------------------------------
+   // trace point = 65
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3028183f, 40.0414658f, 1497545933, 2.20388389),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3028183f, 40.0414772f, leg_index, 0.231651828f, 262,
+           maneuver_index, 0.156173274f, 177));
+   //----------------------------------------------------------------
+   // trace point = 66
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3027039f, 40.0414848f, 1497545938, 1.97962201),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3027039f, 40.0414886f, leg_index, 0.225540042f, 255,
+           maneuver_index, 0.150061488f, 170));
+   //----------------------------------------------------------------
+   // trace point = 67
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3025818f, 40.0414772f, 1497545943, 2.08529401),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3025894f, 40.0415039f, leg_index, 0.219394371f, 248,
+           maneuver_index, 0.143915817f, 163));
+   //----------------------------------------------------------------
+   // trace point = 68
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3024826f, 40.0414543f, 1497545948, 1.82265794),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3024902f, 40.0415115f, leg_index, 0.214117572f, 242,
+           maneuver_index, 0.138639018f, 157));
+   //----------------------------------------------------------------
+   // trace point = 69
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3023605f, 40.0414581f, 1497545954, 1.70538604),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3023682f, 40.041523f, leg_index, 0.207605183f, 235,
+           maneuver_index, 0.132126629f, 150));
+   //----------------------------------------------------------------
+   // trace point = 70
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3022614f, 40.0414886f, 1497545959, 1.83166695),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.302269f, 40.0415344f, leg_index, 0.202294722f, 229,
+           maneuver_index, 0.126816168f, 144));
+   //----------------------------------------------------------------
+   // trace point = 71
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3021469f, 40.0414963f, 1497545965, 1.61029506),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3021545f, 40.0415459f, leg_index, 0.196182936f, 222,
+           maneuver_index, 0.120704383f, 137));
+   //----------------------------------------------------------------
+   // trace point = 72
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.302063f, 40.0415573f, 1497545972, 1.40761197),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.302063f, 40.0415535f, leg_index, 0.191307575f, 216,
+           maneuver_index, 0.115829021f, 131));
+   //----------------------------------------------------------------
+   // trace point = 73
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3019638f, 40.0415916f, 1497545978, 1.60826099),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3019562f, 40.0415649f, leg_index, 0.18559587f, 210,
+           maneuver_index, 0.110117316f, 125));
+   //----------------------------------------------------------------
+   // trace point = 74
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.301857f, 40.0415688f, 1497545990, 0.759440005),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.301857f, 40.0415764f, leg_index, 0.180284709f, 204,
+           maneuver_index, 0.104806155f, 119));
+   //----------------------------------------------------------------
+   // trace point = 75
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3017426f, 40.0415878f, 1497545995, 1.94196296),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3017426f, 40.0415878f, leg_index, 0.174173057f, 197,
+           maneuver_index, 0.0986945033f, 112));
+   //----------------------------------------------------------------
+   // trace point = 76
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3016434f, 40.0416183f, 1497546005, 0.975206971),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3016434f, 40.0415993f, leg_index, 0.168861955f, 191,
+           maneuver_index, 0.0933834016f, 106));
+   //----------------------------------------------------------------
+   // trace point = 77
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3015137f, 40.0416069f, 1497546016, 0.990222991),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3015137f, 40.0416107f, leg_index, 0.161949828f, 183,
+           maneuver_index, 0.0864712745f, 98));
+   //----------------------------------------------------------------
+   // trace point = 78
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3013916f, 40.0416222f, 1497546020, 2.6494329),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3013916f, 40.041626f, leg_index, 0.15540196f, 176,
+           maneuver_index, 0.0799234062f, 91));
+   //----------------------------------------------------------------
+   // trace point = 79
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3012848f, 40.0416679f, 1497546025, 2.06592989),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3012772f, 40.0416374f, leg_index, 0.149290323f, 169,
+           maneuver_index, 0.0738117695f, 84));
+   //----------------------------------------------------------------
+   // trace point = 80
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3011856f, 40.0416985f, 1497546031, 1.51330996),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.301178f, 40.0416489f, leg_index, 0.143979222f, 163,
+           maneuver_index, 0.0685006678f, 78));
+   //----------------------------------------------------------------
+   // trace point = 81
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3010635f, 40.0416946f, 1497546036, 2.04839301),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3010559f, 40.0416603f, leg_index, 0.137467295f, 156,
+           maneuver_index, 0.0619887412f, 71));
+   //----------------------------------------------------------------
+   // trace point = 82
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3009567f, 40.0416832f, 1497546041, 1.83732402),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3009567f, 40.0416718f, leg_index, 0.132156178f, 149,
+           maneuver_index, 0.0566776246f, 64));
+   //----------------------------------------------------------------
+   // trace point = 83
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3008347f, 40.041687f, 1497546056, 0.716032028),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3008347f, 40.0416832f, leg_index, 0.125644267f, 142,
+           maneuver_index, 0.0501657128f, 57));
+   //----------------------------------------------------------------
+   // trace point = 84
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3007202f, 40.0416794f, 1497546061, 1.93234801),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3007202f, 40.0416946f, leg_index, 0.119532682f, 135,
+           maneuver_index, 0.0440541282f, 50));
+   //----------------------------------------------------------------
+   // trace point = 85
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3005981f, 40.0417099f, 1497546066, 2.21424699),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3005981f, 40.0417099f, leg_index, 0.112984911f, 128,
+           maneuver_index, 0.0375063568f, 43));
+   //----------------------------------------------------------------
+   // trace point = 86
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3004913f, 40.0417328f, 1497546073, 1.34482801),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3004913f, 40.0417213f, leg_index, 0.107273519f, 121,
+           maneuver_index, 0.0317949653f, 36));
+   //----------------------------------------------------------------
+   // trace point = 87
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3003845f, 40.0416794f, 1497546079, 1.83220804),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3003922f, 40.041729f, leg_index, 0.101998463f, 115,
+           maneuver_index, 0.0265199095f, 30));
+   //----------------------------------------------------------------
+   // trace point = 88
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3002625f, 40.0416832f, 1497546086, 1.50053704),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3002701f, 40.0417442f, leg_index, 0.0954506844f, 108,
+           maneuver_index, 0.0199721307f, 23));
+   //----------------------------------------------------------------
+   // trace point = 89
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.300148f, 40.0417061f, 1497546091, 1.94358802),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3001556f, 40.0417557f, leg_index, 0.0893388093f, 101,
+           maneuver_index, 0.0138602555f, 16));
+   //----------------------------------------------------------------
+   // trace point = 90
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3000336f, 40.0417099f, 1497546095, 2.40820909),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3000412f, 40.0417671f, leg_index, 0.0832273215f, 94,
+           maneuver_index, 0.00774876773f, 9));
+   //----------------------------------------------------------------
+   // trace point = 91
+   maneuver_index = 2;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2999268f, 40.0417328f, 1497546098, 3.28473711),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2999344f, 40.0417786f, leg_index, 0.0775157809f, 87,
+           maneuver_index, 0.00203722715f, 2));
+   //----------------------------------------------------------------
+   // trace point = 92
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2998581f, 40.0417976f, 1497546105, 1.32928896),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2998962f, 40.0417938f, leg_index, 0.0746951476f, 84,
+           maneuver_index, 0.0445372462f, 50));
+   //----------------------------------------------------------------
+   // trace point = 93
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.299881f, 40.0418777f, 1497546111, 1.51978695),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2999115f, 40.0418739f, leg_index, 0.0690953806f, 78,
+           maneuver_index, 0.0389374793f, 44));
+   //----------------------------------------------------------------
+   // trace point = 94
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2999344f, 40.0419655f, 1497546120, 1.203866),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2999344f, 40.0419655f, leg_index, 0.0626548827f, 71,
+           maneuver_index, 0.0324969813f, 37));
+   //----------------------------------------------------------------
+   // trace point = 95
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2999878f, 40.0420418f, 1497546126, 1.58523905),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2999496f, 40.0420456f, leg_index, 0.0570551977f, 64,
+           maneuver_index, 0.0268972944f, 30));
+   //----------------------------------------------------------------
+   // trace point = 96
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2999496f, 40.0421295f, 1497546138, 0.864358008),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2999649f, 40.0421295f, leg_index, 0.051194232f, 58,
+           maneuver_index, 0.0210363287f, 24));
+   //----------------------------------------------------------------
+   // trace point = 97
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2999878f, 40.0422134f, 1497546143, 2.02330709),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2999802f, 40.0422134f, leg_index, 0.0453331992f, 51,
+           maneuver_index, 0.015175296f, 17));
+   //----------------------------------------------------------------
+   // trace point = 98
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.3000107f, 40.0422974f, 1497546147, 2.37622809),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2999954f, 40.0422974f, leg_index, 0.0394721553f, 45,
+           maneuver_index, 0.00931425206f, 11));
+   //----------------------------------------------------------------
+   // trace point = 99
+   maneuver_index = 3;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2999725f, 40.0423851f, 1497546153, 1.68482804),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.3000107f, 40.0423813f, leg_index, 0.0336115621f, 38,
+           maneuver_index, 0.00345365889f, 4));
+   //----------------------------------------------------------------
+   // trace point = 100
+   maneuver_index = 4;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2998657f, 40.0423737f, 1497546164, 0.87617898),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.299881f, 40.0424461f, leg_index, 0.0228102747f, 26,
+           maneuver_index, 0.0228102747f, 26));
+   //----------------------------------------------------------------
+   // trace point = 101
+   maneuver_index = 4;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2997818f, 40.0424423f, 1497546166, 5.34496117),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2997818f, 40.0424538f, leg_index, 0.0175340641f, 20,
+           maneuver_index, 0.0175340641f, 20));
+   //----------------------------------------------------------------
+   // trace point = 102
+   maneuver_index = 4;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.299675f, 40.0424614f, 1497546172, 1.56609702),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.299675f, 40.0424652f, leg_index, 0.0118227778f, 13,
+           maneuver_index, 0.0118227778f, 13));
+   //----------------------------------------------------------------
+   // trace point = 103
+   maneuver_index = 4;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2995605f, 40.0424881f, 1497546180, 1.29157901),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2995605f, 40.0424767f, leg_index, 0.00571139203f, 6,
+           maneuver_index, 0.00571139203f, 6));
+   //----------------------------------------------------------------
+   // trace point = 104
+   maneuver_index = 5;
+   instruction_index = maneuver_index;
+   TryRouteOnLocationChanged(nav,
+       GetFixLocation(-76.2994537f, 40.0425034f, 1497546189, 1.03479099),
+       GetNavigationStatus(NavigationStatus_RouteState_kTracking,
+           -76.2994537f, 40.0424881f, leg_index, 0.0f, 0,
+           maneuver_index, 0.0f, 0));
+
 }
 
 /* RoadBikeLunchRideLoop geojson to visualize test route
