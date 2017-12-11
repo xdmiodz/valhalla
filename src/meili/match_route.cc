@@ -1,13 +1,8 @@
 #include <vector>
 
 #include "midgard/logging.h"
-#include "midgard/pointll.h"
-#include "baldr/graphreader.h"
-#include "baldr/graphid.h"
-
 #include "meili/geometry_helpers.h"
-#include "meili/match_result.h"
-#include "meili/match_route.h"
+#include "meili/map_matcher.h"
 
 
 namespace {
@@ -132,15 +127,11 @@ bool ValidateRoute(baldr::GraphReader& graphreader,
 
 
 template <typename segment_iterator_t>
-std::vector<EdgeSegment>&
+void
 MergeEdgeSegments(std::vector<EdgeSegment>& route,
                   segment_iterator_t segment_begin,
                   segment_iterator_t segment_end)
 {
-  if (segment_begin == segment_end) {
-    return route;
-  }
-
   for (auto segment = segment_begin; segment != segment_end; segment++) {
     if(!route.empty()) {
       auto& last_segment = route.back();
@@ -154,8 +145,6 @@ MergeEdgeSegments(std::vector<EdgeSegment>& route,
       route.push_back(*segment);
     }
   }
-
-  return route;
 }
 
 };
@@ -215,16 +204,15 @@ bool EdgeSegment::Adjoined(baldr::GraphReader& graphreader, const EdgeSegment& o
   }
 }
 
-
-std::vector<EdgeSegment>&
+bool
 MergeRoute(std::vector<EdgeSegment>& route, const State& source, const State& target)
 {
   const auto route_rbegin = source.RouteBegin(target),
                route_rend = source.RouteEnd();
 
-  if (route_rbegin == route_rend) {
-    return route;
-  }
+  // No route, discontinuity
+  if(route_rbegin == route_rend)
+    return false;
 
   std::vector<EdgeSegment> segments;
 
@@ -240,17 +228,17 @@ MergeRoute(std::vector<EdgeSegment>& route, const State& source, const State& ta
     throw std::logic_error("The first edge must be an origin (invalid predecessor)");
   }
 
-  return MergeEdgeSegments(route, segments.rbegin(), segments.rend());
+  MergeEdgeSegments(route, segments.rbegin(), segments.rend());
+  return true;
 }
-
 
 std::vector<EdgeSegment>
 MergeRoute(const State& source, const State& target)
 {
   std::vector<EdgeSegment> route;
-  return MergeRoute(route, source, target);
+  MergeRoute(route, source, target);
+  return route;
 }
-
 
 template <typename match_iterator_t>
 std::vector<EdgeSegment>
@@ -274,7 +262,8 @@ ConstructRoute(const MapMatcher& mapmatcher,
     if (prev_match != end) {
       const auto& prev_state = mapmatcher.state_container().state(prev_match->stateid),
                        state = mapmatcher.state_container().state(match->stateid);
-      auto segments = MergeRoute(prev_state, state);
+      std::vector<EdgeSegment> segments;
+      MergeRoute(segments, prev_state, state);
 
       if (!ValidateRoute(mapmatcher.graphreader(), segments.begin(), segments.end(), tile)) {
         throw std::runtime_error("Found invalid route");

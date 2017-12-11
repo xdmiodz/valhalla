@@ -35,6 +35,7 @@ namespace valhalla {
       void matrix(tyr::ACTION_TYPE action, rapidjson::Document& request);
       void isochrones(rapidjson::Document& request);
       void trace(tyr::ACTION_TYPE action, rapidjson::Document& request);
+      baldr::json::ArrayPtr transit_available(rapidjson::Document& request);
 
      protected:
 
@@ -49,6 +50,7 @@ namespace valhalla {
       void init_matrix(tyr::ACTION_TYPE action, rapidjson::Document& request);
       void init_isochrones(rapidjson::Document& request);
       void init_trace(rapidjson::Document& request);
+      void init_transit_available(rapidjson::Document& request);
 
       boost::property_tree::ptree config;
       std::vector<baldr::Location> locations;
@@ -59,7 +61,7 @@ namespace valhalla {
       sif::EdgeFilter edge_filter;
       sif::NodeFilter node_filter;
       valhalla::baldr::GraphReader reader;
-      valhalla::baldr::connectivity_map_t connectivity_map;
+      std::shared_ptr<valhalla::baldr::connectivity_map_t> connectivity_map;
       std::unordered_set<std::string> actions;
       std::string action_str;
       std::unordered_map<std::string, size_t> max_locations;

@@ -302,6 +302,18 @@ struct OSMWay {
   uint32_t bike_local_ref_index() const;
 
   /**
+   * Sets the duration for ferries.
+   * @param  duration  The time it takes to take this ferry (in seconds).
+   */
+  void set_duration(const uint32_t duration);
+
+  /**
+   * Gets the duration for ferries.
+   * @return  Returns the time it takes to take this ferry (in seconds).
+   */
+  uint32_t duration() const;
+
+  /**
    * Sets the auto_forward flag.
    * @param  auto_forward   Can you drive in the forward direction?
    */
@@ -387,6 +399,18 @@ struct OSMWay {
   bool emergency_forward() const;
 
   /**
+   * Sets the moped_forward flag
+   * @param  moped_forward  Can a moped drive in the forward direction?
+   */
+  void set_moped_forward(const bool moped_forward);
+
+  /**
+   * Get the moped forward flag
+   * @return  Returns the moped forward flag
+   */
+  bool moped_forward() const;
+
+  /**
    * Sets the auto_backward flag.
    * @param  auto_backward   Can you drive in the reverse direction?
    */
@@ -470,6 +494,20 @@ struct OSMWay {
    * @return  Returns emergency backward flag.
    */
   bool emergency_backward() const;
+
+
+  /**
+   * Set the moped_backward flag.
+   * @param  moped_backward  Can a moped drive in the
+   *                         reverse direction?
+   */
+  void set_moped_backward(const bool moped_backward);
+
+  /**
+   * Get the moped backward flag.
+   * @return  Returns moped backward flag.
+   */
+  bool moped_backward() const;
 
   /**
    * Sets the destination_only flag.
@@ -590,6 +628,18 @@ struct OSMWay {
    * @return  Returns Surface.
    */
   baldr::Surface surface() const;
+
+  /**
+   * Sets the sac scale.
+   * @param  sac_scale
+   */
+  void set_sac_scale(const baldr::SacScale sac_scale);
+
+  /**
+   * Gets the sac scale.
+   * @return  Returns sac_scale
+   */
+  baldr::SacScale sac_scale() const;
 
   /**
    * Sets the right cycle lane.
@@ -1041,6 +1091,9 @@ struct OSMWay {
   uint32_t bike_regional_ref_index_;
   uint32_t bike_local_ref_index_;
 
+  // duration of a ferry in seconds
+  uint32_t duration_;
+
   // Way attributes
   union WayAttributes {
     struct Fields {
@@ -1068,7 +1121,7 @@ struct OSMWay {
       uint32_t truck_route            :1;
       uint32_t sidewalk_right         :1;
       uint32_t sidewalk_left          :1;
-      uint32_t spare                  :3;
+      uint32_t sac_scale              :3;
     } fields;
     uint32_t v;
   };
@@ -1103,6 +1156,7 @@ struct OSMWay {
       uint16_t bike_forward       :1;
       uint16_t emergency_forward  :1;
       uint16_t hov_forward        :1;
+      uint16_t moped_forward      :1;
       uint16_t auto_backward      :1;
       uint16_t bus_backward       :1;
       uint16_t taxi_backward      :1;
@@ -1110,7 +1164,7 @@ struct OSMWay {
       uint16_t bike_backward      :1;
       uint16_t emergency_backward :1;
       uint16_t hov_backward       :1;
-      uint16_t spare              :2;
+      uint16_t moped_backward     :1;
     } fields;
     uint16_t v;
   };

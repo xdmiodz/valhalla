@@ -243,8 +243,7 @@ void get_stops(Transit_Fetch& tile, std::unordered_map<std::string, uint64_t>& s
     set_no_null(std::string, stop_pt.second, "name", "null", stop->set_name);
     stop->set_wheelchair_boarding(stop_pt.second.get<bool>("wheelchair_boarding", true));
     set_no_null(uint64_t, stop_pt.second, "tags.osm_way_id", 0, stop->set_osm_way_id);
-    GraphId stop_id = tile_id;
-    stop_id.fields.id = stops.size();
+    GraphId stop_id(tile_id.tileid(), tile_id.level(), stops.size());
     stop->set_graphid(stop_id);
 
     auto tz = stop_pt.second.get<std::string>("timezone", "null");
@@ -271,13 +270,14 @@ void get_routes(Transit_Fetch& tile, std::unordered_map<std::string, size_t>& ro
       type = Transit_Fetch_VehicleType::Transit_Fetch_VehicleType_kTram;
     else if (vehicle_type == "metro")
       type = Transit_Fetch_VehicleType::Transit_Fetch_VehicleType_kMetro;
-    else if (vehicle_type == "rail" || vehicle_type == "suburban_railway")
+    else if (vehicle_type == "rail" || vehicle_type == "suburban_railway" ||
+             vehicle_type == "railway_service")
       type = Transit_Fetch_VehicleType::Transit_Fetch_VehicleType_kRail;
     else if (vehicle_type == "bus" || vehicle_type == "trolleybus_service" ||
              vehicle_type == "express_bus_service" || vehicle_type == "local_bus_service" ||
              vehicle_type == "bus_service" || vehicle_type == "shuttle_bus" ||
              vehicle_type == "demand_and_response_bus_service" ||
-             vehicle_type == "regional_bus_service")
+             vehicle_type == "regional_bus_service" || vehicle_type == "coach_service")
       type = Transit_Fetch_VehicleType::Transit_Fetch_VehicleType_kBus;
     else if (vehicle_type == "ferry")
       type = Transit_Fetch_VehicleType::Transit_Fetch_VehicleType_kFerry;
@@ -331,13 +331,15 @@ void get_stop_patterns(Transit_Fetch& tile, std::unordered_map<std::string, size
       auto lat = geom.second.back().second.get_value<float>();
       trip_shape.emplace_back(PointLL(lon,lat));
     }
-    // encode the points to reduce size
-    shape->set_encoded_shape(encode7(trip_shape));
+    if (trip_shape.size() > 1) {
+      // encode the points to reduce size
+      shape->set_encoded_shape(encode7(trip_shape));
 
-    // shapes.size()+1 because we can't have a shape id of 0.
-    // 0 means shape id is not set in the transit builder.
-    shape->set_shape_id(shapes.size()+1);
-    shapes.emplace(shape_id, shape->shape_id());
+      // shapes.size()+1 because we can't have a shape id of 0.
+      // 0 means shape id is not set in the transit builder.
+      shape->set_shape_id(shapes.size()+1);
+      shapes.emplace(shape_id, shape->shape_id());
+    }
   }
 }
 

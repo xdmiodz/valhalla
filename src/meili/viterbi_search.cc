@@ -10,25 +10,20 @@ void StateIdIterator::Next()
 {
   ValidateStateId(time_, stateid_);
 
-  if (time_ == kInvalidTime) {
+  // We're done searching between states if time == 0 meaning we found the last one or
+  // we are at a state without a path to it but aren't allowing breaks in the path
+  if(0 == time_ ||
+      (stateid_.IsValid() && !(stateid_ = vs_.Predecessor(stateid_)).IsValid() && !allow_breaks_)) {
+    time_ = kInvalidTime;
+    stateid_ = StateId();
     return;
   }
 
-  if (0 < time_) {
-    time_ --;
-
-    if (stateid_.IsValid()) {
-      stateid_ = vs_.Predecessor(stateid_);
-    }
-
-    // Search at previous time directly
-    if (!stateid_.IsValid()) {
-      stateid_ = vs_.SearchWinner(time_);
-    }
-  } else {
-    time_ = kInvalidTime;
-    stateid_ = StateId();
-  }
+  // Search at previous time directly
+  // used in cloning path so no need to enforce a continuous path
+  --time_;
+  if (!stateid_.IsValid())
+    stateid_ = vs_.SearchWinner(time_);
 }
 
 template <bool Maximize>

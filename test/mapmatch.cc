@@ -7,6 +7,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/optional/optional.hpp>
 
 #include "meili/map_matcher_factory.h"
 #include "meili/map_matcher.h"
@@ -16,7 +17,6 @@
 #include "midgard/logging.h"
 #include "baldr/json.h"
 #include "midgard/distanceapproximator.h"
-#include "midgard/polyline2.h"
 #include "mjolnir/util.h"
 
 using namespace valhalla;
@@ -80,11 +80,11 @@ namespace {
     },
     "thor":{"logging":{"long_request": 110}},
     "skadi":{"actons":["height"],"logging":{"long_request": 5}},
-    "meili":{"customizable": ["turn_penalty_factor","max_route_distance_factor","max_route_time_factor"],
+    "meili":{"customizable": ["turn_penalty_factor","max_route_distance_factor","max_route_time_factor","search_radius"],
              "mode":"auto","grid":{"cache_size":100240,"size":500},
              "default":{"beta":3,"breakage_distance":2000,"geometry":false,"gps_accuracy":5.0,"interpolation_distance":10,
              "max_route_distance_factor":5,"max_route_time_factor":5,"max_search_radius":200,"route":true,
-             "search_radius":50,"sigma_z":4.07,"turn_penalty_factor":200}},
+             "search_radius":15.0,"sigma_z":4.07,"turn_penalty_factor":200}},
     "service_limits": {
       "auto": {"max_distance": 5000000.0, "max_locations": 20,"max_matrix_distance": 400000.0,"max_matrix_locations": 50},
       "auto_shorter": {"max_distance": 5000000.0,"max_locations": 20,"max_matrix_distance": 400000.0,"max_matrix_locations": 50},
@@ -111,109 +111,10 @@ namespace {
     return escaped;
   }
 
-  template <typename T>
-  struct ring_queue_t {
-    ring_queue_t(size_t limit):limit(limit), i(0) {
-      v.reserve(limit);
-    }
-    void emplace_back(T&& t){
-      if(v.size() < limit) v.emplace_back(t);
-      else v[i] = t;
-      i = (i + 1) % limit;
-    };
-    const T& front() const { return i < v.size() ? v[i] : v[0]; }
-    const T& back() const { return v[i - 1]; }
-    size_t size() const { return v.size(); }
-    bool full() const { return v.size() == limit; }
-
-    size_t limit, i;
-    std::vector<T> v;
-
-    using iterator = typename std::vector<T>::iterator;
-    using const_iterator = typename std::vector<T>::const_iterator;
-    iterator begin() { return v.begin(); }
-    const_iterator begin() const { return v.begin(); }
-    iterator end() { return v.end(); }
-    const_iterator end() const { return v.end(); }
-  };
-
-  std::vector<midgard::PointLL> resample_at_1hz(const boost::property_tree::ptree& edges, const std::vector<midgard::PointLL>& shape) {
-    std::vector<midgard::PointLL> resampled;
-    float time_remainder = 0.0;
-    for(const auto& edge_item: edges) {
-      const auto& edge = edge_item.second;
-      //get the portion of the shape that applies to this edge
-      std::vector<midgard::PointLL> edge_shape(shape.cbegin() + edge.get<size_t>("begin_shape_index"),
-        shape.cbegin() + edge.get<size_t>("end_shape_index") + 1);
-      //get the speed of this edge
-      auto meters = midgard::Polyline2<PointLL>::Length(edge_shape);
-      auto speed = (edge.get<float>("speed") * 1e3) / 3600.f;
-      //trim the shape to account of the portion of the previous second that bled onto this edge
-      auto to_trim = speed * time_remainder;
-      auto trimmed = midgard::trim_polyline(edge_shape.cbegin(), edge_shape.cend(), to_trim / meters, 1.f);
-      //resample it at 1 second intervals
-      auto second_interval = midgard::resample_spherical_polyline(trimmed, speed, false);
-      resampled.insert(resampled.end(), second_interval.begin(), second_interval.end());
-      //figure out how much of the last second will bleed into the next edge
-      double intpart;
-      time_remainder = std::modf((meters - to_trim) / speed, &intpart);
-    }
-    return resampled;
-  }
-
-  std::vector<midgard::PointLL> simulate_gps(const boost::property_tree::ptree& edges, const std::vector<midgard::PointLL>& shape,
-      std::vector<float>& accuracies, float smoothing = 30, float accuracy = 5.f, size_t sample_rate = 1) {
-    //resample the coords along a given edge at one second intervals
-    auto resampled = resample_at_1hz(edges, shape);
-
-    //a way to get noise but only allow for slow change
-    std::default_random_engine generator(0);
-    std::uniform_real_distribution<float> distribution(-1, 1);
-    ring_queue_t<std::pair<float, float> > noises(smoothing);
-    auto get_noise = [&]() {
-      //we generate a vector whose magnitude is no more than accuracy
-      auto lon_adj = distribution(generator);
-      auto lat_adj = distribution(generator);
-      auto len = std::sqrt((lon_adj * lon_adj) + (lat_adj * lat_adj));
-      lon_adj /= len; lat_adj /= len; //norm
-      auto scale = (distribution(generator) + 1.f) / 2.f;
-      lon_adj *= scale * accuracy;  lat_adj *= scale * accuracy; //random scale <= accuracy
-      noises.emplace_back(std::make_pair(lon_adj, lat_adj));
-      //average over last n to smooth
-      std::pair<float, float> noise{0, 0};
-      std::for_each(noises.begin(), noises.end(),
-        [&noise](const std::pair<float, float>& n) { noise.first += n.first; noise.second += n.second; });
-      noise.first /= noises.size();
-      noise.second /= noises.size();
-      return noise;
-    };
-    //fill up the noise queue so the first points arent unsmoothed
-    while(!noises.full()) get_noise();
-
-    //for each point of the 1hz shape
-    std::vector<midgard::PointLL> simulated;
-    for(size_t i = 0; i < resampled.size(); ++i) {
-      const auto& p = resampled[i];
-      //is this a harmonic of the desired sampling rate
-      if(i % sample_rate == 0) {
-        //meters of noise with extremely low likelihood its larger than accuracy
-        auto noise = get_noise();
-        //use the number of meters per degree in both axis to offset the point by the noise
-        auto metersPerDegreeLon = DistanceApproximator::MetersPerLngDegree(p.second);
-        simulated.emplace_back(midgard::PointLL(p.first + noise.first / metersPerDegreeLon,
-          p.second + noise.second / kMetersPerDegreeLat));
-        //keep the distance to use for accuracy
-        accuracies.emplace_back(simulated.back().Distance(p));
-      }
-    }
-    return simulated;
-  }
-
   int seed = 973; int bound = 81;
-  std::string make_test_case() {
+  std::string make_test_case(PointLL& start, PointLL& end) {
     static std::default_random_engine generator(seed);
     static std::uniform_real_distribution<float> distribution(0, 1);
-    PointLL start,end;
     float distance = 0;
     do {
       //get two points in and around utrecht
@@ -232,10 +133,12 @@ namespace {
     int tested = 0;
     while(tested < bound) {
       //get a route shape
-      auto test_case = make_test_case();
+      PointLL start, end;
+      auto test_case = make_test_case(start, end);
+      std::cout << test_case << std::endl;
       boost::property_tree::ptree route;
-      try { route = json_to_pt(actor.route(tyr::ROUTE, test_case)); }
-      catch (...) { continue; }
+      try { route = json_to_pt(actor.route(test_case)); }
+      catch (...) { std::cout << "route failed" << std::endl; continue; }
       auto encoded_shape = route.get_child("trip.legs").front().second.get<std::string>("shape");
       auto shape = midgard::decode<std::vector<midgard::PointLL> >(encoded_shape);
       //skip any routes that have loops in them as edge walk fails in that case...
@@ -249,8 +152,6 @@ namespace {
         for(const auto& name : maneuver.second.get_child("street_names"))
           looped = looped || !names.insert(name.second.get_value<std::string>()).second;
       }
-      if(looped)
-        continue;
       //get the edges along that route shape
       boost::property_tree::ptree walked;
       try {
@@ -266,7 +167,7 @@ namespace {
         walked_edges.push_back(edge.second.get<uint64_t>("id"));
       //simulate gps from the route shape
       std::vector<float> accuracies;
-      auto simulation = simulate_gps(walked.get_child("edges"), shape, accuracies, 50, 100.f, 1);
+      auto simulation = midgard::simulate_gps(walked.get_child("edges"), shape, accuracies, 50, 100.f, 1);
       auto locations = to_locations(simulation, accuracies, 1);
       //get a trace-attributes from the simulated gps
       auto matched = json_to_pt(actor.trace_attributes(
@@ -277,6 +178,10 @@ namespace {
       //because of noise we can have off by 1 happen at the beginning or end so we trim to make sure
       auto walked_it = std::search(walked_edges.begin(), walked_edges.end(), matched_edges.begin() + 1, matched_edges.end() - 1);
       if(walked_it == walked_edges.end()) {
+        if(looped) {
+          std::cout << "route had a possible loop" << std::endl;
+          continue;
+        }
         auto decoded_match = midgard::decode<std::vector<midgard::PointLL> >(matched.get<std::string>("shape"));
         std::string geojson = R"({"type":"FeatureCollection","features":[{"geometry":{"type":"LineString","coordinates":[)";
         geojson += print(shape);
@@ -284,7 +189,9 @@ namespace {
         geojson += print(simulation);
         geojson += R"(]},"type":"Feature","properties":{"stroke":"#0000ff","stroke-width":2}},{"geometry":{"type":"LineString","coordinates":[)";
         geojson += print(decoded_match);
-        geojson += R"(]},"type":"Feature","properties":{"stroke":"#ff0000","stroke-width":2}}]})";
+        geojson += R"(]},"type":"Feature","properties":{"stroke":"#ff0000","stroke-width":2}},{"geometry":{"type":"MultiPoint","coordinates":[)";
+        geojson += print(std::vector<PointLL>{start, end});
+        geojson += R"(]},"type":"Feature","properties":{}}]})";
         std::cout << geojson << std::endl;
         throw std::logic_error("The match did not match the walk");
       }
@@ -296,11 +203,11 @@ namespace {
   void test_distance_only() {
     tyr::actor_t actor(conf, true);
     auto matched = json_to_pt(actor.trace_attributes(
-            R"({"trace_options":{"max_route_distance_factor":10,"max_route_time_factor":1,"turn_penalty_factor":0},
-                "costing":"auto","shape_match":"map_snap","shape":[
-                {"lat":52.09110,"lon":5.09806,"accuracy":10},
-                {"lat":52.09050,"lon":5.09769,"accuracy":100},
-                {"lat":52.09098,"lon":5.09679,"accuracy":10}]})"));
+      R"({"trace_options":{"max_route_distance_factor":10,"max_route_time_factor":1,"turn_penalty_factor":0},
+          "costing":"auto","shape_match":"map_snap","shape":[
+          {"lat":52.09110,"lon":5.09806,"accuracy":10},
+          {"lat":52.09050,"lon":5.09769,"accuracy":100},
+          {"lat":52.09098,"lon":5.09679,"accuracy":10}]})"));
     std::unordered_set<std::string> names;
     for(const auto& edge : matched.get_child("edges"))
       for(const auto& name : edge.second.get_child("names"))
@@ -312,11 +219,11 @@ namespace {
   void test_time_rejection() {
     tyr::actor_t actor(conf, true);
     auto matched = json_to_pt(actor.trace_attributes(
-            R"({"trace_options":{"max_route_distance_factor":10,"max_route_time_factor":3,"turn_penalty_factor":0},
-                "costing":"auto","shape_match":"map_snap","shape":[
-                {"lat":52.09110,"lon":5.09806,"accuracy":10,"time":2},
-                {"lat":52.09050,"lon":5.09769,"accuracy":100,"time":4},
-                {"lat":52.09098,"lon":5.09679,"accuracy":10,"time":6}]})"));
+      R"({"trace_options":{"max_route_distance_factor":10,"max_route_time_factor":3,"turn_penalty_factor":0},
+          "costing":"auto","shape_match":"map_snap","shape":[
+          {"lat":52.09110,"lon":5.09806,"accuracy":10,"time":2},
+          {"lat":52.09050,"lon":5.09769,"accuracy":100,"time":4},
+          {"lat":52.09098,"lon":5.09679,"accuracy":10,"time":6}]})"));
     std::unordered_set<std::string> names;
     for(const auto& edge : matched.get_child("edges"))
       for(const auto& name : edge.second.get_child("names"))
@@ -329,17 +236,52 @@ namespace {
   void test32bit() {
     tyr::actor_t actor(conf, true);
     std::string test_case = "{\"costing\":\"auto\",\"locations\":[{\"lat\":52.096672,\"lon\":5.110825},{\"lat\":52.081371,\"lon\":5.125671}]}";
-    actor.route(tyr::ROUTE, test_case);
+    actor.route(test_case);
   }
 
-  void test_topk() {
+  void test_topk_validate() {
+    //tests a fork in the road
+    tyr::actor_t actor(conf, true);
+
+    //tests a previous segfault due to using a claimed state
+    auto matched = json_to_pt(actor.trace_attributes(
+      R"({"costing":"auto","best_paths":2,"shape_match":"map_snap","shape":[
+         {"lat":52.088548,"lon":5.15357,"accuracy":30},
+         {"lat":52.088627,"lon":5.153269,"accuracy":30},
+         {"lat":52.08864,"lon":5.15298,"accuracy":30},
+         {"lat":52.08861,"lon":5.15272,"accuracy":30},
+         {"lat":52.08863,"lon":5.15253,"accuracy":30},
+         {"lat":52.08851,"lon":5.15249,"accuracy":30}]})"));
+
+    //this tests a fix for an infinite loop because there is only 1 result and we ask for 4
+    matched = json_to_pt(actor.trace_attributes(
+      R"({"costing":"auto","best_paths":4,"shape_match":"map_snap","shape":[
+         {"lat":52.09579,"lon":5.13137,"accuracy":5},
+         {"lat":52.09652,"lon":5.13184,"accuracy":5}]})"));
+    if(matched.get_child("alternate_paths").size() > 0)
+      throw std::logic_error("There should be only one result");
+
+  }
+
+  void test_topk_fork_alternate() {
+    //tests a fork in the road
     tyr::actor_t actor(conf, true);
     auto matched = json_to_pt(actor.trace_attributes(
-            R"({"costing":"auto","best_paths":2,"shape_match":"map_snap","shape":[
-                {"lat":52.08511,"lon":5.15085,"accuracy":50},
-                {"lat":52.08533,"lon":5.15109,"accuracy":50},
-                {"lat":52.08539,"lon":5.15100,"accuracy":50}]})"));
+      R"({"trace_options":{"search_radius":0},"costing":"auto","best_paths":2,"shape_match":"map_snap","shape":[
+          {"lat":52.08511,"lon":5.15085,"accuracy":10},
+          {"lat":52.08533,"lon":5.15109,"accuracy":20},
+          {"lat":52.08539,"lon":5.15100,"accuracy":20}]})"));
 
+    /*** Primary path - left at the fork
+      {"type":"FeatureCollection","features":[
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.150850,52.085110]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":0}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151090,52.085331]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":1}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151000,52.085388]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":2}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.150851,52.085110]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":0,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.295,"distance_from_trace_point":0.097}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151000,52.085323]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":1,"matched_point_type":"matched","edge_index":1,"distance_along_edge":0.152,"distance_from_trace_point":6.149}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.150990,52.085388]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":2,"matched_point_type":"matched","edge_index":1,"distance_along_edge":0.296,"distance_from_trace_point":0.713}}
+      ]}
+     */
     std::vector<std::string> names;
     for(const auto& edge : matched.get_child("edges"))
       for(const auto& name : edge.second.get_child("names"))
@@ -347,10 +289,22 @@ namespace {
     if(names != std::vector<std::string>{"Louis Saalbornlaan", "Cor Ruyslaan"}) {
       std::string streets;
       for(const auto& n : names)
-        streets += n + " ";
+        streets += n + ", ";
       throw std::logic_error("The most obvious result is stay left but got: " + streets);
     }
+    if(matched.get<float>("confidence_score") != 1.0f)
+      throw std::logic_error("Confidence of the first result is always 1");
 
+    /*** Alternate path - right at the fork
+      {"type":"FeatureCollection","features":[
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.150850,52.085110]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":0}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151090,52.085331]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":1}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151000,52.085388]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":2}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.150851,52.085110]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":0,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.295,"distance_from_trace_point":0.097}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151095,52.085327]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":1,"matched_point_type":"matched","edge_index":1,"distance_along_edge":0.254,"distance_from_trace_point":0.532}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151106,52.085339]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":2,"matched_point_type":"matched","edge_index":1,"distance_along_edge":0.293,"distance_from_trace_point":9.044}}
+      ]}
+     */
     names.clear();
     auto alternate = matched.get_child("alternate_paths").front().second;
     for(const auto& edge : alternate.get_child("edges"))
@@ -359,9 +313,170 @@ namespace {
     if(names != std::vector<std::string>{"Louis Saalbornlaan", "Louis Saalbornlaan"}) {
       std::string streets;
       for(const auto& n : names)
-        streets += n + " ";
+        streets += n + ", ";
       throw std::logic_error("The second most obvious result is stay right but got: " + streets);
     }
+    if(alternate.get<float>("confidence_score") >= 1.0f)
+      throw std::logic_error("Confidence of the second result is always less than 1");
+    if(matched.get<float>("raw_score") >= alternate.get<float>("raw_score"))
+      throw std::logic_error("The raw score of the first result is always less than that of the second");
+
+  }
+
+  void test_topk_loop_alternate() {
+    //tests a loop in the road
+    tyr::actor_t actor(conf, true);
+    auto matched = json_to_pt(actor.trace_attributes(
+        R"({"costing":"auto","best_paths":2,"shape_match":"map_snap","shape":[
+           {"lat":52.0886,"lon":5.1535,"accuracy":10},
+           {"lat":52.088619,"lon":5.15315,"accuracy":20},
+           {"lat":52.08855,"lon":5.152652,"accuracy":25},
+           {"lat":52.0883,"lon":5.152183,"accuracy":20},
+           {"lat":52.088062,"lon":5.151963,"accuracy":20}]})"));
+
+    /*** Primary path - stay left on the same road
+      {"type":"FeatureCollection","features":[
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153500,52.088600]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":0}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153150,52.088619]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":1}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152652,52.088551]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":2}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152183,52.088299]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":3}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151963,52.088062]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":4}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153483,52.088573]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":0,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.698,"distance_from_trace_point":3.174}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153239,52.088531]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":1,"matched_point_type":"matched","edge_index":2,"distance_along_edge":0.049,"distance_from_trace_point":11.437}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152822,52.088379]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":2,"matched_point_type":"matched","edge_index":4,"distance_along_edge":0.136,"distance_from_trace_point":22.209}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152305,52.088184]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":3,"matched_point_type":"matched","edge_index":5,"distance_along_edge":0.118,"distance_from_trace_point":15.111}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151974,52.088051]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":4,"matched_point_type":"matched","edge_index":5,"distance_along_edge":0.801,"distance_from_trace_point":1.468}}
+      ]}
+     */
+    std::vector<std::string> names;
+    for(const auto& edge : matched.get_child("edges"))
+      for(const auto& name : edge.second.get_child("names"))
+        names.push_back(name.second.get_value<std::string>());
+    if(names != std::vector<std::string>{"Louis Bouwmeesterlaan", "Louis Bouwmeesterlaan", "Louis Bouwmeesterlaan", "Louis Bouwmeesterlaan", "Louis Bouwmeesterlaan", "Louis Bouwmeesterlaan"}) {
+      std::string streets;
+      for(const auto& n : names)
+        streets += n + ", ";
+      throw std::logic_error("The most obvious result is stay left on the same road - but got: " + streets);
+    }
+    if(matched.get<float>("confidence_score") != 1.0f)
+      throw std::logic_error("Confidence of the first result is always 1");
+
+    /*** Alternate path - loop around to the right
+      {"type":"FeatureCollection","features":[
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153500,52.088600]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":0}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153150,52.088619]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":1}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152652,52.088551]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":2}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152183,52.088299]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":3}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151963,52.088062]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":4}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153483,52.088573]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":0,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.698,"distance_from_trace_point":3.174}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.153173,52.088627]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":1,"matched_point_type":"matched","edge_index":2,"distance_along_edge":0.308,"distance_from_trace_point":1.769}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152542,52.088661]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":2,"matched_point_type":"matched","edge_index":4,"distance_along_edge":0.183,"distance_from_trace_point":14.339}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.152305,52.088184]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":3,"matched_point_type":"matched","edge_index":6,"distance_along_edge":0.118,"distance_from_trace_point":15.111}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.151974,52.088051]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":4,"matched_point_type":"matched","edge_index":6,"distance_along_edge":0.801,"distance_from_trace_point":1.468}}
+      ]}
+     */
+    names.clear();
+    auto alternate = matched.get_child("alternate_paths").front().second;
+    for(const auto& edge : alternate.get_child("edges"))
+      for(const auto& name : edge.second.get_child("names"))
+        names.push_back(name.second.get_value<std::string>());
+    if(names != std::vector<std::string>{"Louis Bouwmeesterlaan", "Louis Bouwmeesterlaan", "Eduard Verkadelaan", "Eduard Verkadelaan", "Eduard Verkadelaan", "Eduard Verkadelaan", "Louis Bouwmeesterlaan"}) {
+      std::string streets;
+      for(const auto& n : names)
+        streets += n + ", ";
+      throw std::logic_error("The second most obvious result is loop around to the right - but got: " + streets);
+    }
+    if(alternate.get<float>("confidence_score") >= 1.0f)
+      throw std::logic_error("Confidence of the second result is always less than 1");
+    if(matched.get<float>("raw_score") >= alternate.get<float>("raw_score"))
+      throw std::logic_error("The raw score of the first result is always less than that of the second");
+
+  }
+
+  void test_topk_frontage_alternate() {
+    //tests a parallel frontage road
+    tyr::actor_t actor(conf, true);
+    auto matched = json_to_pt(actor.trace_attributes(
+        R"({"costing":"auto","best_paths":2,"shape_match":"map_snap","shape":[
+           {"lat":52.07956040090567,"lon":5.138160288333893,"accuracy":10},
+           {"lat":52.07957358807355,"lon":5.138508975505829,"accuracy":10},
+           {"lat":52.07959666560798,"lon":5.138905942440034,"accuracy":10},
+           {"lat":52.0796213915245,"lon":5.139262676239015,"accuracy":10},
+           {"lat":52.079637875461195,"lon":5.139581859111787,"accuracy":10},
+           {"lat":52.07964776582031,"lon":5.139828622341157,"accuracy":10},
+           {"lat":52.07965600778458,"lon":5.1402121782302865,"accuracy":10}]})"));
+
+    /*** Primary path - use main road
+      {"type":"FeatureCollection","features":[
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138160,52.079559]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":0}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138509,52.079575]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":1}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138906,52.079597]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":2}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139263,52.079620]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":3}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139582,52.079639]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":4}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139829,52.079647]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":5}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.140212,52.079655]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":6}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138153,52.079605]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":0,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.254,"distance_from_trace_point":5.085}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138501,52.079624]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":1,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.385,"distance_from_trace_point":5.511}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138898,52.079647]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":2,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.534,"distance_from_trace_point":5.511}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139255,52.079670]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":3,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.668,"distance_from_trace_point":5.511}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139574,52.079689]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":4,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.788,"distance_from_trace_point":5.511}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139820,52.079704]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":5,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.881,"distance_from_trace_point":6.357}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.140204,52.079727]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":6,"matched_point_type":"matched","edge_index":1,"distance_along_edge":0.070,"distance_from_trace_point":8.033}}
+      ]}
+     */
+    std::vector<std::string> names;
+    for(const auto& edge : matched.get_child("edges"))
+      for(const auto& name : edge.second.get_child("names"))
+        names.push_back(name.second.get_value<std::string>());
+    if(names != std::vector<std::string>{"Rubenslaan", "Rubenslaan"}) {
+      std::string streets;
+      for(const auto& n : names)
+        streets += n + ", ";
+      throw std::logic_error("The most obvious result is stay straight on the same road - but got: " + streets);
+    }
+    if(matched.get<float>("confidence_score") != 1.0f)
+      throw std::logic_error("Confidence of the first result is always 1");
+
+    /*** Alternate path - use one way frontage road
+      {"type":"FeatureCollection","features":[
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138160,52.079559]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":0}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138509,52.079575]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":1}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138906,52.079597]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":2}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139263,52.079620]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":3}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139582,52.079639]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":4}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139829,52.079647]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":5}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.140212,52.079655]},"properties":{"marker-color":"#abd9e9","marker-size":"small","trace_point_index":6}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138169,52.079498]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":0,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.223,"distance_from_trace_point":6.774}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138517,52.079517]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":1,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.369,"distance_from_trace_point":6.351}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.138914,52.079540]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":2,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.536,"distance_from_trace_point":6.351}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139271,52.079559]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":3,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.686,"distance_from_trace_point":6.774}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139591,52.079575]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":4,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.821,"distance_from_trace_point":7.197}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.139837,52.079586]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":5,"matched_point_type":"matched","edge_index":0,"distance_along_edge":0.924,"distance_from_trace_point":6.771}},
+      {"type":"Feature","geometry":{"type":"Point","coordinates":[5.140018,52.079597]},"properties":{"marker-color":"#2c7bb6","marker-size":"medium","matched_point_index":6,"matched_point_type":"matched","edge_index":0,"distance_along_edge":1.000,"distance_from_trace_point":14.626}}
+      ]}
+     */
+    names.clear();
+    auto alternate = matched.get_child("alternate_paths").front().second;
+    for(const auto& edge : alternate.get_child("edges")) {
+      const auto json_names = edge.second.get_child_optional("names");
+      if (json_names) {
+        for(const auto& name : json_names.get())
+          names.push_back(name.second.get_value<std::string>());
+      } else {
+        names.push_back("<empty>");
+      }
+    }
+      if(names != std::vector<std::string>{"Rubenslaan"}) {
+      std::string streets;
+      for(const auto& n : names)
+        streets += n + ", ";
+      throw std::logic_error("The second most obvious result is fronatge road to the right - but got: " + streets);
+    }
+    if(alternate.get<float>("confidence_score") >= 1.0f)
+      throw std::logic_error("Confidence of the second result is always less than 1");
+    if(matched.get<float>("raw_score") >= alternate.get<float>("raw_score"))
+      throw std::logic_error("The raw score of the first result is always less than that of the second");
+
   }
 
 }
@@ -382,7 +497,13 @@ int main(int argc, char* argv[]) {
 
   suite.test(TEST_CASE(test_time_rejection));
 
-  suite.test(TEST_CASE(test_topk));
+  suite.test(TEST_CASE(test_topk_validate));
+
+  suite.test(TEST_CASE(test_topk_fork_alternate));
+
+  suite.test(TEST_CASE(test_topk_loop_alternate));
+
+  suite.test(TEST_CASE(test_topk_frontage_alternate));
 
   return suite.tear_down();
 }

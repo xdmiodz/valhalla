@@ -169,10 +169,10 @@ struct edge_association {
   // segment.
   const chunk_t& chunks() const { return traffic_chunks; }
 
-  uint32_t success_count() const { return success_count_; }
-  uint32_t failure_count() const { return failure_count_; }
-  uint32_t walk_count() const { return walk_count_; }
-  uint32_t path_count() const { return path_count_; }
+  std::unordered_map<uint32_t, uint32_t> success_count() const { return success_count_; }
+  std::unordered_map<uint32_t, uint32_t> failure_count() const { return failure_count_; }
+  std::unordered_map<uint32_t, uint32_t> walk_count() const { return walk_count_; }
+  std::unordered_map<uint32_t, uint32_t> path_count() const { return path_count_; }
 
 private:
   std::vector<CandidateEdge> candidate_edges(bool origin,
@@ -196,10 +196,10 @@ private:
   std::shared_ptr<vj::GraphTileBuilder> m_tile_builder;
 
   // Statistics
-  uint32_t success_count_;
-  uint32_t failure_count_;
-  uint32_t walk_count_;
-  uint32_t path_count_;
+  std::unordered_map<uint32_t, uint32_t> success_count_;
+  std::unordered_map<uint32_t, uint32_t> failure_count_;
+  std::unordered_map<uint32_t, uint32_t> walk_count_;
+  std::unordered_map<uint32_t, uint32_t> path_count_;
 
   // Chunks - saved for later
   chunk_t traffic_chunks;
@@ -488,11 +488,7 @@ vb::GraphId next_edge(const GraphId& edge_id, vb::GraphReader& reader, const vb:
 
 // Edge association constructor
 edge_association::edge_association(const bpt::ptree &pt)
-  : success_count_(0),
-    failure_count_(0),
-    walk_count_(0),
-    path_count_(0),
-    m_reader(pt.get_child("mjolnir")),
+  : m_reader(pt.get_child("mjolnir")),
     m_travel_mode(vs::TravelMode::kDrive),
     m_path_algo(new vt::AStarPathAlgorithm()),
     m_costing(new DistanceOnlyCost(m_travel_mode)) {
@@ -819,21 +815,21 @@ void edge_association::add_tile(const std::string& file_name) {
       assert(entry.has_segment());
       auto &segment = entry.segment();
       if (match_segment(base_id + entry_id, segment, match_type)) {
-        success_count_++;
+        success_count_[base_id.level()] += 1;
         if (match_type == MatchType::kWalk) {
-          walk_count_++;
+          walk_count_[base_id.level()] += 1;
         } else {
-          path_count_++;
+          path_count_[base_id.level()] += 1;
         }
       } else {
-        failure_count_++;
+        failure_count_[base_id.level()] += 1;
       }
     }
     entry_id += 1;
   }
 
   // Finish this tile
-  m_tile_builder->UpdateTrafficSegments();
+  m_tile_builder->UpdateTrafficSegments(false);
   m_reader.Clear();
 }
 
@@ -891,7 +887,7 @@ void add_leftover_associations(const bpt::ptree &pt, std::unordered_map<GraphId,
     tile_builder.InitializeTrafficChunks();
     for(const auto& association : associations)
       tile_builder.AddTrafficSegment(association.first, association.second);
-    tile_builder.UpdateTrafficSegments();
+    tile_builder.UpdateTrafficSegments(false);
   }
 }
 
@@ -917,7 +913,10 @@ void add_chunks(const bpt::ptree &pt, std::unordered_map<vb::GraphId, chunks_t>&
     for(const auto& chunk : associated_chunks) {
       tile_builder.AddTrafficSegments(chunk.first, chunk.second);
     }
-    tile_builder.UpdateTrafficSegments();
+
+    // Since this is the last time UpdateTrafficSegments is called we set
+    // the flag indicating the DirectedEdge traffic flags are set.
+    tile_builder.UpdateTrafficSegments(true);
   }
 }
 
@@ -1015,20 +1014,28 @@ int main(int argc, char** argv) {
   LOG_INFO("Finished");
 
   // Gather statistics, chunks, and leftovers (associations in a different tile)
-  uint32_t success_count = 0;
-  uint32_t failure_count = 0;
-  uint32_t walk_count = 0;
-  uint32_t path_count = 0;
+  std::unordered_map<uint32_t, uint32_t> success_count;
+  std::unordered_map<uint32_t, uint32_t> failure_count;
+  std::unordered_map<uint32_t, uint32_t> walk_count;
+  std::unordered_map<uint32_t, uint32_t> path_count;
   uint32_t leftover_count = 0;
   uint32_t chunk_count = 0;
   std::unordered_map<vb::GraphId, leftovers_t> leftovers;
   std::unordered_map<vb::GraphId, chunks_t> chunks;
   for (auto& result : results) {
     auto associations = result.get_future().get();
-    success_count += associations.success_count();
-    failure_count += associations.failure_count();
-    walk_count += associations.walk_count();
-    path_count += associations.path_count();
+
+    for( const auto& x : associations.success_count() )
+      success_count[x.first] += x.second;
+
+    for( const auto& x : associations.failure_count() )
+      failure_count[x.first] += x.second;
+
+    for( const auto& x : associations.walk_count() )
+      walk_count[x.first] += x.second;
+
+    for( const auto& x : associations.path_count() )
+      path_count[x.first] += x.second;
 
     // Leftovers
     for(const auto& association : associations.leftovers()) {
@@ -1050,10 +1057,19 @@ int main(int argc, char** argv) {
     }
     chunk_count += associations.chunks().size();
   }
-  LOG_INFO("Success = " + std::to_string(success_count) +
-           " Failure = " + std::to_string(failure_count) +
-           " Walk = " + std::to_string(walk_count) +
-           " Path = " + std::to_string(path_count));
+
+  for( const auto& x : success_count )
+    LOG_INFO("Success = " + std::to_string(x.second) + " at level " + std::to_string(x.first));
+
+  for( const auto& x : failure_count )
+    LOG_INFO("Failure = " + std::to_string(x.second) + " at level " + std::to_string(x.first));
+
+  for( const auto& x : walk_count )
+    LOG_INFO("Walk = " + std::to_string(x.second) + " at level " + std::to_string(x.first));
+
+  for( const auto& x : path_count )
+    LOG_INFO("Path = " + std::to_string(x.second) + " at level " + std::to_string(x.first));
+
   LOG_INFO("Leftovers = " + std::to_string(leftover_count) +
            " Chunks = " + std::to_string(chunk_count));
 

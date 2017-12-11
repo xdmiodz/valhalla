@@ -260,6 +260,16 @@ uint32_t OSMWay::bike_local_ref_index() const {
   return bike_local_ref_index_;
 }
 
+//Sets the duration for ferries.
+void OSMWay::set_duration(const uint32_t duration) {
+  duration_ = duration;
+}
+
+//Gets the duration for ferries.
+uint32_t OSMWay::duration() const {
+  return duration_;
+}
+
 // Set auto forward flag.
 void OSMWay::set_auto_forward(const bool auto_forward) {
   access_.fields.auto_forward = auto_forward;
@@ -330,6 +340,16 @@ bool OSMWay::emergency_forward() const {
   return access_.fields.emergency_forward;
 }
 
+// Set the moped forward flag
+void OSMWay::set_moped_forward(const bool moped_forward) {
+  access_.fields.moped_forward = moped_forward;
+}
+
+// Get the moped forward flag
+bool OSMWay::moped_forward() const {
+  return access_.fields.moped_forward;
+}
+
 // Set auto backward flag.
 void OSMWay::set_auto_backward(const bool auto_backward) {
   access_.fields.auto_backward = auto_backward;
@@ -398,6 +418,16 @@ void OSMWay::set_emergency_backward(const bool emergency_backward) {
 // Get the emergency backward flag.
 bool OSMWay::emergency_backward() const {
   return access_.fields.emergency_backward;
+}
+
+// Set the moped backward flag
+void OSMWay::set_moped_backward(const bool moped_backward) {
+  access_.fields.moped_backward = moped_backward;
+}
+
+// Get the moped backward flag
+bool OSMWay::moped_backward() const {
+  return access_.fields.moped_backward;
 }
 
 // Set destination only/private flag.
@@ -498,6 +528,18 @@ void OSMWay::set_surface(const Surface surface) {
 // Get the surface.
 Surface OSMWay::surface() const {
   return static_cast<Surface>(attributes_.fields.surface);
+}
+
+// Set the sac scale.
+void OSMWay::set_sac_scale(const SacScale sac_scale)
+{
+  attributes_.fields.sac_scale = static_cast<uint8_t>(sac_scale);
+}
+
+// Get the sac scale.
+SacScale OSMWay::sac_scale() const
+{
+  return static_cast<SacScale>(attributes_.fields.sac_scale);
 }
 
 // Set the right cycle lane.

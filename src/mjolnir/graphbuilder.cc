@@ -77,17 +77,17 @@ std::map<GraphId, size_t> SortGraph(const std::string& nodes_file,
       //remember if this was a new tile
       if(node_index == 0 || node.graph_id != (--tiles.end())->first) {
         tiles.insert({node.graph_id, node_index});
-        node.graph_id.fields.id = 0;
+        node.graph_id.set_id(0);
         run_index = node_index;
         ++node_count;
       }//but is it a new node
       else if(last_node.node.osmid != node.node.osmid) {
-        node.graph_id.fields.id = last_node.graph_id.fields.id + 1;
+        node.graph_id.set_id(last_node.graph_id.id() + 1);
         run_index = node_index;
         ++node_count;
       }//not new keep the same graphid
       else
-        node.graph_id.fields.id = last_node.graph_id.fields.id;
+        node.graph_id.set_id(last_node.graph_id.id());
 
       //if this node marks the start of an edge, go tell the edge where the first node in the series is
       if(node.is_start()) {
@@ -489,10 +489,6 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
       graphtile.AddTileCreationDate(tile_creation_date);
       graphtile.header_builder().set_dataset_id(osmdata.max_changeset_id_);
 
-      // Create a dummy admin record at index 0. Used if admin records
-      // are not used/created or if none is found.
-      graphtile.AddAdmin("None","None","","");
-
       // Get the admin polygons. If only one exists for the tile check if the
       // tile is entirely inside the polygon
       bool tile_within_one_admin = false;
@@ -745,6 +741,7 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
                               std::get<3>(forward_grades))});
 
             found = inserted.first;
+
           }//now we have the edge info offset
           else {
             found = geo_attribute_cache.find(edge_info_offset);
@@ -754,9 +751,16 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
           if(found == geo_attribute_cache.cend())
             throw std::runtime_error("GeoAttributes cached object should be there!");
 
+          //ferry speed override.  duration is set on the way
+          if (w.ferry() && w.duration()) {
+            //convert to kph
+            speed = static_cast<uint32_t>((std::get<0>(found->second) * 3.6f) / w.duration());
+          }
+
           // Add a directed edge and get a reference to it
           DirectedEdgeBuilder de(w, (*nodes[target]).graph_id, forward,
-                                 std::get<0>(found->second), speed, speed_limit,
+                                 static_cast<uint32_t>(std::get<0>(found->second) + .5),
+                                 speed, speed_limit,
                                  truck_speed, use,
                                  static_cast<RoadClass>(edge.attributes.importance), n,
                                  has_signal, restrictions, bike_network);
@@ -764,7 +768,13 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
           DirectedEdge& directededge = graphtile.directededges().back();
 
           //temporarily set the leaves tile flag to indicate when we need to search the access.bin file.
-          directededge.set_leaves_tile(w.has_user_tags());
+          //ferries don't have overrides in country access logic, so use this bit to indicate if
+          //the speed has been set via the duration and length
+          if (!w.ferry())
+            directededge.set_leaves_tile(w.has_user_tags());
+          else if (w.duration()){
+            directededge.set_leaves_tile(true);
+          }
 
           directededge.set_edgeinfo_offset(found->first);
           //if this is against the direction of the shape we must use the second one
@@ -827,13 +837,22 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
             LOG_WARN("Failed to import lane connectivity for way: " + std::to_string(w.way_id()) + " : " + e.what());
           }
 
-          //set the number of lanes.
+          // Set the number of lanes.
           if (w.forward_tagged_lanes() && w.backward_tagged_lanes()) {
             if (forward)
               directededge.set_lanecount(w.forward_lanes());
             else directededge.set_lanecount(w.backward_lanes());
-
-          } else directededge.set_lanecount(w.lanes());
+          } else  {
+            // The lanes tag in OSM means total number of lanes. For ways with
+            // 2-way travel divide by 2. This will not be accurate for an odd
+            // number of lanes, but in these cases there really should be
+            // lanes:forward and lanes:backward tags.
+            if (w.oneway() || w.oneway_reverse()) {
+              directededge.set_lanecount(w.lanes());
+            } else {
+              directededge.set_lanecount(std::max(1, static_cast<int>(w.lanes()) / 2));
+            }
+          }
 
           // Add restrictions..For now only storing access restrictions for trucks
           // TODO - support more than one mode

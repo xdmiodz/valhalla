@@ -26,7 +26,8 @@ json::MapPtr access_json(uint32_t access) {
     {"pedestrian", static_cast<bool>(access & kPedestrianAccess)},
     {"taxi", static_cast<bool>(access & kTaxiAccess)},
     {"truck", static_cast<bool>(access & kTruckAccess)},
-    {"wheelchair", static_cast<bool>(access & kWheelchairAccess)}
+    {"wheelchair", static_cast<bool>(access & kWheelchairAccess)},
+    {"moped", static_cast<bool>(access & kMopedAccess)}
   });
 }
 
@@ -119,6 +120,11 @@ void DirectedEdge::set_curvature(const uint32_t factor) {
 // Sets the lane connectivity flag.
 void DirectedEdge::set_laneconnectivity(const bool lc) {
   lane_conn_ = lc;
+}
+
+// Sets the traffic segment flag.
+void DirectedEdge::set_traffic_seg(const bool seg) {
+  traffic_seg_ = seg;
 }
 
 // -------------------------- Routing attributes --------------------------- //
@@ -236,10 +242,13 @@ void DirectedEdge::set_truck_route(const bool truck_route) {
 
 // Sets the number of lanes
 void DirectedEdge::set_lanecount(const uint32_t lanecount) {
-  // TOTO - make sure we don't exceed some max value
+  // Make sure we don't exceed max lane count. Also make sure lane count
+  // is at least 1.
   if (lanecount > kMaxLaneCount) {
     LOG_WARN("Exceeding maximum lane count: " + std::to_string(lanecount));
     lanecount_ = kMaxLaneCount;
+  } else if (lanecount == 0) {
+    lanecount_ = 1;
   } else {
     lanecount_ = lanecount;
   }
@@ -282,7 +291,6 @@ void DirectedEdge::set_forwardaccess(const uint32_t modes) {
   } else {
     forwardaccess_ = modes;
   }
-  forwardaccess_ = modes;
 }
 
 // Set all forward access modes to true (used for transition edges)
@@ -340,6 +348,13 @@ void DirectedEdge::set_truck_speed(const uint32_t speed) {
 // Sets the classification (importance) of this edge.
 void DirectedEdge::set_classification(const RoadClass roadclass) {
   classification_= static_cast<uint32_t>(roadclass);
+}
+
+// Sets the sac scale. Shows if edge is meant for hiking, and if so how difficult
+// of a hike it is.
+void DirectedEdge::set_sac_scale(const SacScale sac_scale)
+{
+  sac_scale_ = static_cast<uint64_t>(sac_scale);
 }
 
 // Sets the surface type (see baldr/graphconstants.h). This is a general

@@ -36,6 +36,10 @@ GraphTileBuilder::GraphTileBuilder(const std::string& tile_dir,
     textlistbuilder_.emplace_back("");
     text_offset_map_.emplace("", 0);
     text_list_offset_ = 1;
+
+    // Add a dummy admin record at index 0 to be used if admin records are
+    // not used/created or if none is found.
+    AddAdmin("None","None","","");
     return;
   }
 
@@ -976,7 +980,7 @@ void GraphTileBuilder::AddTrafficSegments(const baldr::GraphId& edgeid,
  * "chunks". Need to make sure the "shift" for offsets to data after the
  * traffic information are only increased by the amount of "new" segments.
  */
-void GraphTileBuilder::UpdateTrafficSegments() {
+void GraphTileBuilder::UpdateTrafficSegments(const bool update_dir_edges) {
   // Get the number of new segments and chunks added with this call.
   uint32_t new_segments = traffic_segment_builder_.size() -
                           header_->traffic_id_count();
@@ -1030,6 +1034,29 @@ void GraphTileBuilder::UpdateTrafficSegments() {
     const auto* end = reinterpret_cast<const char*>(header_) +
                 header_->end_offset();
     file.write(begin, end - begin);
+
+    // Update directed edge flags
+    if (update_dir_edges) {
+      // Copy directed edges so we can modify them
+      uint32_t n = header_->directededgecount();
+      directededges_builder_.resize(n);
+      memcpy(&directededges_builder_[0], directededges_, n * sizeof(DirectedEdge));
+
+      // Iterate through directed edges and set traffic segment flag for aby
+      // that have any traffic segments.
+      for (uint32_t i = 0; i < n; i++) {
+        const TrafficAssociation& t = traffic_segment_builder_[i];
+        if (t.chunk() || t.count() == 1) {
+          directededges_builder_[i].set_traffic_seg(true);
+        }
+      }
+
+      // Write the updated directed edges
+      size_t offset = sizeof(GraphTileHeader) + header_->nodecount() * sizeof(NodeInfo);
+      file.seekp(offset, std::ios_base::beg);
+      file.write(reinterpret_cast<const char*>(&directededges_builder_[0]),
+                 directededges_builder_.size() * sizeof(DirectedEdge));
+    }
 
     // Close the file
     file.close();

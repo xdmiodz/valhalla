@@ -51,6 +51,7 @@ DirectedEdgeBuilder::DirectedEdgeBuilder(
 
   set_dismount (way.dismount());
   set_use_sidepath (way.use_sidepath());
+  set_sac_scale (way.sac_scale());
   set_surface(way.surface());
   set_tunnel(way.tunnel());
   set_roundabout(way.roundabout());
@@ -102,6 +103,14 @@ DirectedEdgeBuilder::DirectedEdgeBuilder(
   if ((way.bike_forward()  && !forward) ||
       (way.bike_backward() &&  forward)) {
     reverse_access |= kBicycleAccess;
+  }
+  if ((way.moped_forward()  &&  forward) ||
+      (way.moped_backward() && !forward)) {
+    forward_access |= kMopedAccess;
+  }
+  if ((way.moped_forward() && !forward) ||
+      (way.moped_backward() && forward)) {
+    reverse_access |= kMopedAccess;
   }
   if ((way.emergency_forward()  &&  forward) ||
       (way.emergency_backward() && !forward)) {

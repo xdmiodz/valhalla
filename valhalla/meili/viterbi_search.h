@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <stdexcept>
 
 #include <valhalla/meili/priority_queue.h>
 #include <valhalla/meili/stateid.h>
@@ -70,10 +71,11 @@ class IViterbiSearch;
 class StateIdIterator: public std::iterator<std::forward_iterator_tag, StateId>
 {
  public:
-  StateIdIterator(IViterbiSearch& vs, StateId::Time time, const StateId& stateid)
+  StateIdIterator(IViterbiSearch& vs, StateId::Time time, const StateId& stateid, bool allow_breaks = true)
       : vs_(vs),
         time_(time),
-        stateid_(stateid)
+        stateid_(stateid),
+        allow_breaks_(allow_breaks)
   { ValidateStateId(time, stateid); }
 
   StateIdIterator(IViterbiSearch& vs)
@@ -127,6 +129,8 @@ class StateIdIterator: public std::iterator<std::forward_iterator_tag, StateId>
 
   StateId stateid_;
 
+  bool allow_breaks_;
+
   void Next();
 };
 
@@ -167,13 +171,23 @@ class IViterbiSearch
   virtual bool AddStateId(const StateId& stateid)
   { return added_states_.insert(stateid).second; }
 
+  /**
+   * Remove a state ID. Note that if an ID is removed, client must call ClearSearch before new search.
+   *
+   * @return true if it's removed
+   */
+  virtual bool RemoveStateId(const StateId& stateid)
+  {
+    return 0 < added_states_.erase(stateid);
+  }
+
   virtual bool HasStateId(const StateId& stateid) const
   { return added_states_.find(stateid) != added_states_.end(); }
 
   virtual StateId SearchWinner(StateId::Time time) = 0;
 
-  stateid_iterator SearchPath(StateId::Time time)
-  { return stateid_iterator(*this, time, SearchWinner(time)); }
+  stateid_iterator SearchPath(StateId::Time time, bool allow_breaks = true)
+  { return stateid_iterator(*this, time, SearchWinner(time), allow_breaks); }
 
   stateid_iterator PathEnd() const
   { return path_end_; }
@@ -240,6 +254,19 @@ class NaiveViterbiSearch: public IViterbiSearch
 
   bool AddStateId(const StateId& stateid) override;
 
+  bool RemoveStateId(const StateId& stateid) override
+  {
+    const auto removed = IViterbiSearch::RemoveStateId(stateid);
+    if (!removed) {
+      return false;
+    }
+    // remove it from columns
+    auto& column = states_[stateid.time()];
+    const auto it = std::find(column.begin(), column.end(), stateid);
+    column.erase(it);
+    return true;
+  }
+
   StateId SearchWinner(StateId::Time time) override;
 
   StateId Predecessor(const StateId& stateid) const override;
@@ -286,6 +313,19 @@ class ViterbiSearch: public IViterbiSearch
   void ClearSearch() override;
 
   bool AddStateId(const StateId& stateid) override;
+
+  bool RemoveStateId(const StateId& stateid) override
+  {
+    const auto removed = IViterbiSearch::RemoveStateId(stateid);
+    if (!removed) {
+      return false;
+    }
+    // remove it from columns
+    auto& column = states_[stateid.time()];
+    const auto it = std::find(column.begin(), column.end(), stateid);
+    column.erase(it);
+    return true;
+  }
 
   StateId SearchWinner(StateId::Time time) override;
 

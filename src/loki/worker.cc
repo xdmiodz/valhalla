@@ -12,6 +12,7 @@
 #include "sif/autocost.h"
 #include "sif/bicyclecost.h"
 #include "sif/pedestriancost.h"
+#include "sif/motorscootercost.h"
 #include "baldr/json.h"
 #include "baldr/rapidjson_utils.h"
 #include "tyr/actor.h"
@@ -113,7 +114,8 @@ namespace valhalla {
     }
 
     loki_worker_t::loki_worker_t(const boost::property_tree::ptree& config):
-        config(config), reader(config.get_child("mjolnir")), connectivity_map(config.get_child("mjolnir")),
+        config(config), reader(config.get_child("mjolnir")),
+        connectivity_map(config.get<bool>("loki.use_connectivity", true) ? new connectivity_map_t(config.get_child("mjolnir")) : nullptr),
         long_request(config.get<float>("loki.logging.long_request")),
         max_contours(config.get<size_t>("service_limits.isochrone.max_contours")),
         max_time(config.get<size_t>("service_limits.isochrone.max_time")),
@@ -181,6 +183,7 @@ namespace valhalla {
       factory.Register("bus", sif::CreateBusCost);
       factory.Register("bicycle", sif::CreateBicycleCost);
       factory.Register("hov", sif::CreateHOVCost);
+      factory.Register("motor_scooter", sif::CreateMotorScooterCost);
       factory.Register("pedestrian", sif::CreatePedestrianCost);
       factory.Register("truck", sif::CreateTruckCost);
       factory.Register("transit", sif::CreateTransitCost);
@@ -252,6 +255,9 @@ namespace valhalla {
           case TRACE_ROUTE:
             trace(action->second, request_rj);
             result.messages.emplace_back(rapidjson::to_string(request_rj));
+            break;
+          case TRANSIT_AVAILABLE:
+            result = to_response(transit_available(request_rj), jsonp, info);
             break;
           default:
             //apparently you wanted something that we figured we'd support but havent written yet

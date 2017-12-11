@@ -343,8 +343,7 @@ namespace {
   void append_trace_info(json::MapPtr json,
       const AttributesController& controller,
       const DirectionsOptions& directions_options,
-      const std::tuple<float, std::vector<thor::MatchResult>, TripPath>& map_match_result,
-      size_t total_map_match_result_count) {
+      const std::tuple<float, float, std::vector<thor::MatchResult>, TripPath>& map_match_result) {
     // Set trip path and match results
     const auto& match_results = std::get<kMatchResultsIndex>(map_match_result);
     const auto& trip_path = std::get<kTripPathIndex>(map_match_result);
@@ -357,11 +356,16 @@ namespace {
     if (trip_path.has_shape())
       json->emplace("shape", trip_path.shape());
 
-    // Add confidence_score, if requested and there is more than one match
-    if (controller.attributes.at(kConfidenceScore)
-        && (total_map_match_result_count > 1)) {
+    // Add confidence_score
+    if (controller.attributes.at(kConfidenceScore)) {
       json->emplace("confidence_score",
           json::fp_t { std::get<kConfidenceScoreIndex>(map_match_result), 3 });
+    }
+
+    // Add raw_score
+    if (controller.attributes.at(kRawScore)) {
+      json->emplace("raw_score",
+          json::fp_t { std::get<kRawScoreIndex>(map_match_result), 3 });
     }
 
     // Add admins list
@@ -382,7 +386,7 @@ namespace {
   json::MapPtr serialize(const AttributesController& controller,
       const boost::optional<std::string>& id,
       const DirectionsOptions& directions_options,
-      std::vector<std::tuple<float, std::vector<thor::MatchResult>, TripPath>>& map_match_results) {
+      std::vector<std::tuple<float, float, std::vector<thor::MatchResult>, TripPath>>& map_match_results) {
 
     // Create json map to return
     auto json = json::map({});
@@ -401,28 +405,19 @@ namespace {
     // Loop over all results to process the best path
     // and the alternate paths (if alternates exist)
     bool best_path = true;
-    size_t total_map_match_result_count = map_match_results.size();
     auto alt_paths_array = json::array({});
+    json->emplace("alternate_paths", alt_paths_array);
     for (const auto& map_match_result : map_match_results) {
       if (best_path) {
         // Append the best path trace info
         append_trace_info(json, controller, directions_options,
-            map_match_result, total_map_match_result_count);
-
-        // Only add alternate paths array if needed
-        if (total_map_match_result_count > 1) {
-          // Update so we process alternate paths
-          best_path = false;
-
-          // Add an altenrate_paths array place holder
-          json->emplace("alternate_paths", alt_paths_array);
-
-        }
+            map_match_result);
+        best_path = false;
       } else {
         // Append alternate path trace info to alternate path array
         auto alt_path_json = json::map({});
         append_trace_info(alt_path_json, controller, directions_options,
-            map_match_result, total_map_match_result_count);
+            map_match_result);
         alt_paths_array->push_back(alt_path_json);
       }
     }
@@ -472,7 +467,7 @@ json::MapPtr thor_worker_t::trace_attributes(
    * map-matching method. If true, this enforces to only use exact route match algorithm.
    */
   odin::TripPath trip_path;
-  std::vector<std::tuple<float, std::vector<thor::MatchResult>, odin::TripPath>> map_match_results;
+  std::vector<std::tuple<float, float, std::vector<thor::MatchResult>, odin::TripPath>> map_match_results;
   AttributesController controller;
   filter_attributes(request, controller);
   auto shape_match = STRING_TO_MATCH.find(request.get<std::string>("shape_match", "walk_or_snap"));
@@ -487,7 +482,7 @@ json::MapPtr thor_worker_t::trace_attributes(
           trip_path = route_match(controller);
           if (trip_path.node().size() == 0)
             throw std::exception{};
-          map_match_results.emplace_back(1.0f, std::vector<thor::MatchResult>{}, trip_path);
+          map_match_results.emplace_back(1.0f, 0.0f, std::vector<thor::MatchResult>{}, trip_path);
         } catch (const std::exception& e) {
           throw valhalla_exception_t{443, shape_match->first + " algorithm failed to find exact route match.  Try using shape_match:'walk_or_snap' to fallback to map-matching algorithm"};
         }
@@ -514,6 +509,8 @@ json::MapPtr thor_worker_t::trace_attributes(
           } catch (const std::exception& e) {
             throw valhalla_exception_t{444, shape_match->first + " algorithm failed to snap the shape points to the correct shape."};
           }
+        } else {
+          map_match_results.emplace_back(1.0f, 0.0f, std::vector<thor::MatchResult>{}, trip_path);
         }
         break;
       }

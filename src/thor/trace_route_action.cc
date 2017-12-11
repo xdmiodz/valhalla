@@ -137,20 +137,22 @@ odin::TripPath thor_worker_t::route_match(const AttributesController& controller
 // PathInfo is primarily a list of edge Ids but it also include elapsed time to the end
 // of each edge. We will need to use the existing costing method to form the elapsed time
 // the path. We will start with just using edge costs and will add transition costs.
-std::vector<std::tuple<float, std::vector<thor::MatchResult>, odin::TripPath>> thor_worker_t::map_match(
+std::vector<std::tuple<float, float, std::vector<thor::MatchResult>, odin::TripPath>> thor_worker_t::map_match(
     const AttributesController& controller, bool trace_attributes_action,
     uint32_t best_paths) {
-  std::vector<std::tuple<float, std::vector<thor::MatchResult>, odin::TripPath>> map_match_results;
+  std::vector<std::tuple<float, float, std::vector<thor::MatchResult>, odin::TripPath>> map_match_results;
 
   // Call Meili for map matching to get a collection of pathLocation Edges
   matcher->set_interrupt(interrupt);
   // Create the vector of matched path results
-  std::vector<std::vector<meili::MatchResult>> offline_results;
+  std::vector<meili::MatchResults> offline_results;
   if (trace.size() > 0)
     offline_results = matcher->OfflineMatch(trace, best_paths);
 
   // Process each score/match result
-  for (const auto& match_results : offline_results) {
+  for (const auto& result : offline_results) {
+    const auto& match_results = result.results;
+    const auto& edge_segments = result.segments;
     std::vector<thor::MatchResult> enhanced_match_results;
     odin::TripPath trip_path;
     std::unordered_map<size_t, std::pair<RouteDiscontinuity, RouteDiscontinuity>> route_discontinuities;
@@ -158,7 +160,7 @@ std::vector<std::tuple<float, std::vector<thor::MatchResult>, odin::TripPath>> t
     // Form the path edges based on the matched points and populate disconnected edges
     std::vector<std::pair<GraphId, GraphId>> disconnected_edges;
     std::vector<PathInfo> path_edges = MapMatcher::FormPath(matcher.get(),
-        match_results, mode_costing, mode, disconnected_edges, trace_attributes_action);
+        match_results, edge_segments, mode_costing, mode, disconnected_edges, trace_attributes_action);
 
     if (trace_attributes_action) {
       // Associate match points to edges, if enabled
@@ -398,9 +400,10 @@ std::vector<std::tuple<float, std::vector<thor::MatchResult>, odin::TripPath>> t
     } else {
       throw valhalla_exception_t { 442 };
     }
-    //TODO: figure out the confidence score..
-    float score = 1.f / ((&match_results - &offline_results.front()) + 1.f);
-    map_match_results.emplace_back(score, enhanced_match_results, trip_path);
+    // Keep the result
+    map_match_results.emplace_back(
+        map_match_results.empty() ? 1.0f : std::get<kRawScoreIndex>(map_match_results.front()) / result.score,
+        result.score, enhanced_match_results, trip_path);
   }
 
   return map_match_results;

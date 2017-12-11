@@ -187,6 +187,7 @@ nobase_include_HEADERS = \
 	valhalla/sif/costfactory.h \
 	valhalla/sif/autocost.h \
 	valhalla/sif/bicyclecost.h \
+	valhalla/sif/motorscootercost.h \
 	valhalla/sif/pedestriancost.h \
 	valhalla/sif/transitcost.h \
 	valhalla/sif/truckcost.h \
@@ -211,7 +212,6 @@ nobase_include_HEADERS = \
 	valhalla/meili/map_matcher.h \
 	valhalla/meili/map_matcher_factory.h \
 	valhalla/meili/traffic_segment_matcher.h \
-	valhalla/meili/match_route.h \
 	valhalla/skadi/worker.h \
 	valhalla/skadi/sample.h \
 	valhalla/skadi/util.h \
@@ -314,6 +314,7 @@ libvalhalla_la_SOURCES = \
 	src/baldr/date_time_zonespec.h \
 	src/sif/autocost.cc \
 	src/sif/bicyclecost.cc \
+	src/sif/motorscootercost.cc \
 	src/sif/pedestriancost.cc \
 	src/sif/transitcost.cc \
 	src/sif/truckcost.cc \
@@ -338,6 +339,7 @@ libvalhalla_la_SOURCES = \
 	src/loki/matrix_action.cc \
 	src/loki/isochrone_action.cc \
 	src/loki/trace_route_action.cc \
+	src/loki/transit_available_action.cc \
 	src/loki/node_search.cc \
 	src/proto/tripcommon.pb.cc \
 	src/proto/trippath.pb.cc \
@@ -655,6 +657,7 @@ check_PROGRAMS = \
 	test/serializers \
 	test/traffic_matcher \
 	test/autocost \
+	test/motorscootercost \
 	test/bicyclecost \
 	test/pedestriancost \
 	test/transitcost \
@@ -849,6 +852,9 @@ test_traffic_matcher_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS)
 test_autocost_SOURCES = src/sif/autocost.cc test/test.cc
 test_autocost_CPPFLAGS = -DINLINE_TEST $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@
 test_autocost_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_LDFLAGS@ $(BOOST_LIBS) libvalhalla.la
+test_motorscootercost_SOURCES = src/sif/motorscootercost.cc test/test.cc
+test_motorscootercost_CPPFLAGS = -DINLINE_TEST $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@
+test_motorscootercost_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_LDFLAGS@ $(BOOST_LIBS) libvalhalla.la
 test_bicyclecost_SOURCES = src/sif/bicyclecost.cc test/test.cc
 test_bicyclecost_CPPFLAGS = -DINLINE_TEST $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@
 test_bicyclecost_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_LDFLAGS@ $(BOOST_LIBS) libvalhalla.la
@@ -888,6 +894,7 @@ test/data/utrecht_tiles: valhalla_build_tiles
 TEST_CLEANFILES += test/data/utrecht_tiles
 
 check_PROGRAMS += \
+	test/mapmatch \
 	test/utrecht \
 	test/edgeinfobuilder \
 	test/uniquenames \
@@ -901,8 +908,11 @@ check_PROGRAMS += \
 	test/graphtilebuilder \
 	test/search \
 	test/node_search \
-	test/mapmatch \
 	test/matrix
+test_mapmatch_DEPENDENCIES = test/data/utrecht_tiles
+test_mapmatch_SOURCES = test/mapmatch.cc test/test.cc
+test_mapmatch_CPPFLAGS = $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@
+test_mapmatch_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_LDFLAGS@ $(BOOST_LIBS) libvalhalla.la
 test_utrecht_SOURCES = test/utrecht.cc test/test.cc
 test_utrecht_CPPFLAGS = $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@ @RAPIDJSON_CPPFLAGS@
 test_utrecht_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_LDFLAGS@ $(BOOST_LIBS) libvalhalla.la
@@ -942,10 +952,6 @@ test_search_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_L
 test_node_search_SOURCES = test/node_search.cc test/test.cc
 test_node_search_CPPFLAGS = $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@ @RAPIDJSON_CPPFLAGS@
 test_node_search_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_LDFLAGS@ $(BOOST_LIBS) libvalhalla.la
-test_mapmatch_DEPENDENCIES = test/data/utrecht_tiles
-test_mapmatch_SOURCES = test/mapmatch.cc test/test.cc
-test_mapmatch_CPPFLAGS = $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@
-test_mapmatch_LDADD = $(DEPS_LIBS) $(DATA_DEPS_LIBS) $(SERVICE_DEPS_LIBS) @BOOST_LDFLAGS@ $(BOOST_LIBS) libvalhalla.la
 test_matrix_DEPENDENCIES = test/data/utrecht_tiles
 test_matrix_SOURCES = test/matrix.cc test/test.cc
 test_matrix_CPPFLAGS = $(DEPS_CFLAGS) $(DATA_DEPS_CFLAGS) $(SERVICE_DEPS_CFLAGS) @BOOST_CPPFLAGS@
