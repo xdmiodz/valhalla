@@ -18,9 +18,6 @@ DataQuality::DataQuality()
       forward_restrictions_count(0),
       reverse_restrictions_count(0),
       node_counts{} {
-  // Clear out the duplicates file
-  std::ofstream dupfile;
-  dupfile.open("duplicateways.txt", std::ofstream::out | std::ofstream::app);
 }
 
 // Add statistics (accumulate from several DataQuality objects)
@@ -75,7 +72,7 @@ void DataQuality::LogDuplicates() const {
   // Sort by edgecount and write to separate file
   std::ofstream dupfile;
   std::sort(dups.begin(), dups.end());
-  dupfile.open("duplicateways.txt", std::ofstream::out | std::ofstream::app);
+  dupfile.open("duplicateways.txt", std::ofstream::out | std::ofstream::trunc);
   dupfile << "WayID1   WayID2    DuplicateEdges" << std::endl;
   for (const auto& dupway : dups) {
     dupfile << dupway.wayid1 << "," << dupway.wayid2 << ","

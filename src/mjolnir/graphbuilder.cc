@@ -559,9 +559,10 @@ void BuildTileSet(const std::string& ways_file, const std::string& way_nodes_fil
         RoadClass bestclass = RoadClass::kServiceOther;
         for (const auto& edge_pair : bundle.node_edges) {
           // Skip if this is a duplicate edge
-          if (duplicate_edges.find(edge_pair.second) != duplicate_edges.end()) {
+          // TODO - complete logic for duplicates before actually skipping!
+          /* if (duplicate_edges.find(edge_pair.second) != duplicate_edges.end()) {
             continue;
-          }
+          } */
 
           // Get the edge and way
           const Edge& edge = edge_pair.first;
