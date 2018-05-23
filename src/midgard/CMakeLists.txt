@@ -1,9 +1,11 @@
 set(headers
+  ${VALHALLA_SOURCE_DIR}/valhalla/midgard/base64.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/linesegment2.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/tiles.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/gridded_data.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/polyline2.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/obb2.h
+  ${VALHALLA_SOURCE_DIR}/valhalla/midgard/openlr.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/pointll.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/vector2.h
   ${VALHALLA_SOURCE_DIR}/valhalla/midgard/constants.h

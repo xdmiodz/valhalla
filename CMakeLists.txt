@@ -179,7 +179,7 @@ set(tests aabb2 actor admin attributes_controller datetime directededge
   polyline2 queue routing sample sequence serializers sign signs streetname streetnames streetnames_factory
   streetnames_us streetname_us tilehierarchy tiles traffic_matcher  turn util_midgard
   util_odin util_skadi vector2 verbal_text_formatter verbal_text_formatter_us verbal_text_formatter_us_co
-  verbal_text_formatter_us_tx viterbi_search)
+  verbal_text_formatter_us_tx viterbi_search openlr)
 
 if(ENABLE_DATA_TOOLS)
   list(APPEND tests astar countryaccess edgeinfobuilder graphbuilder graphparser graphtilebuilder
