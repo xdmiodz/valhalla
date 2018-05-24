@@ -31,7 +31,6 @@ constexpr float kDefaultCountryCrossingCost = 600.0f;  // Seconds
 constexpr float kDefaultCountryCrossingPenalty = 0.0f; // Seconds
 constexpr float kDefaultUseFerry = 0.5f;               // Factor between 0 and 1
 constexpr float kDefaultUseHighways = 1.0f;            // Factor between 0 and 1
-constexpr float kDefaultUsePrimary = 0.5f;             // Factor between 0 and 1
 constexpr float kDefaultUseTrails = 0.0f;              // Factor between 0 and 1
 
 constexpr Surface kMinimumMotorcycleSurface = Surface::kDirt;
@@ -74,7 +73,6 @@ constexpr ranged_default_t<float> kCountryCrossingPenaltyRange{0, kDefaultCountr
                                                                kMaxSeconds};
 constexpr ranged_default_t<float> kUseFerryRange{0, kDefaultUseFerry, 1.0f};
 constexpr ranged_default_t<float> kUseHighwaysRange{0, kDefaultUseHighways, 1.0f};
-constexpr ranged_default_t<float> kUsePrimaryRange{0, kDefaultUsePrimary, 1.0f};
 constexpr ranged_default_t<float> kUseTrailsRange{0, kDefaultUseTrails, 1.0f};
 
 // Additional penalty to avoid destination only
@@ -308,9 +306,6 @@ public:
   // Density factor used in edge transition costing
   std::vector<float> trans_density_factor_;
 
-  float use_primary_; // Scale from 0 (avoid primary roads) to 1 (don't avoid primary roads)
-  float road_factor_; // Road factor based on use_primary_
-
   // Elevation/grade penalty (weighting applied based on the edge's weighted
   // grade (relative value from 0-15)
   float grade_penalty_[16];
@@ -386,13 +381,6 @@ MotorcycleCost::MotorcycleCost(const boost::property_tree::ptree& pt)
   for (uint32_t d = 0; d < 16; d++) {
     density_factor_[d] = 0.85f + (d * 0.018f);
   }
-
-  use_primary_ = kUsePrimaryRange(pt.get<float>("use_primary", kDefaultUsePrimary));
-
-  // Set the road classification factor. use_roads factors above 0.5 start to
-  // reduce the weight difference between road classes while factors below 0.5
-  // start to increase the differences.
-  road_factor_ = (use_primary_ >= 0.5f) ? 1.5f - use_primary_ : 3.0f - use_primary_ * 5.0f;
 }
 } // namespace
 
@@ -751,16 +739,6 @@ void testMotorcycleCostParams() {
     ctorTester.reset(make_motorcyclecost_from_json("use_ferry", (*fDistributor)(generator)));
     if (ctorTester->use_ferry_ < kUseFerryRange.min || ctorTester->use_ferry_ > kUseFerryRange.max) {
       throw std::runtime_error("use_ferry_ is not within it's range");
-    }
-  }
-
-  // use_primary_
-  fDistributor.reset(make_real_distributor_from_range(kUsePrimaryRange));
-  for (unsigned i = 0; i < testIterations; ++i) {
-    ctorTester.reset(make_motorcyclecost_from_json("use_primary", (*fDistributor)(generator)));
-    if (ctorTester->use_primary_ < kUsePrimaryRange.min ||
-        ctorTester->use_primary_ > kUsePrimaryRange.max) {
-      throw std::runtime_error("use_hills_ is not within it's range");
     }
   }
 }
