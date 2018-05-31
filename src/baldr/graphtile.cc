@@ -48,7 +48,8 @@ GraphTile::GraphTile()
       complex_restriction_reverse_(nullptr), edgeinfo_(nullptr), textlist_(nullptr),
       complex_restriction_forward_size_(0), complex_restriction_reverse_size_(0), edgeinfo_size_(0),
       textlist_size_(0), traffic_segments_(nullptr), traffic_chunks_(nullptr), traffic_chunk_size_(0),
-      lane_connectivity_(nullptr), lane_connectivity_size_(0), edge_elevation_(nullptr) {
+      lane_connectivity_(nullptr), lane_connectivity_size_(0), edge_elevation_(nullptr),
+      predicted_traffic_(nullptr) {
 }
 
 // Constructor given a filename. Reads the graph data into memory.
@@ -217,6 +218,11 @@ void GraphTile::Initialize(const GraphId& graphid, char* tile_ptr, const size_t 
   // example_size_ = header_->end_offset() - header_->example_offset();
 
   // ANY NEW EXPANSION DATA GOES HERE
+
+  // Start of edge predictive traffic data. If the tile has edge predictive traffic data (query
+  // the header) then the count is the same as the directed edge count.
+  predicted_traffic_ =
+      reinterpret_cast<PredictedTraffic*>(tile_ptr + header_->predicted_traffic_offset());
 
   // Associate one stop Ids for transit tiles
   if (graphid.level() == 3) {
