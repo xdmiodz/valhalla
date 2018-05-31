@@ -389,10 +389,22 @@ public:
   void UpdateTrafficSegments(const bool update_dir_edges);
 
   /**
+<<<<<<< HEAD
+   * Updates a tile with predictive traffic data.
+   */
+  void UpdatePedictedTraffic();
+
+  /**
    * Gets the current list of edge elevation (builders).
    * @return  Returns the edge elevation builders.
    */
   std::vector<EdgeElevation>& edge_elevations();
+
+  /**
+   * Gets the current list of predicted trafffic (builders).
+   * @return  Returns the predicted traffic builders.
+   */
+  std::vector<PredictedTraffic>& predicted_traffic();
 
 protected:
   struct EdgeTupleHasher {
@@ -494,6 +506,9 @@ protected:
 
   // List of edge elevation records. Index with directed edge Id.
   std::vector<EdgeElevation> edge_elevation_builder_;
+
+  // List of predicted traffic records. Index with directed edge Id.
+  std::vector<PredictedTraffic> predicted_traffic_builder_;
 
   // lane connectivity list offset
   uint32_t lane_connectivity_offset_ = 0;
