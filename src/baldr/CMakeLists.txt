@@ -31,6 +31,7 @@ set(headers
   ${VALHALLA_SOURCE_DIR}/valhalla/baldr/nodeinfo.h
   ${VALHALLA_SOURCE_DIR}/valhalla/baldr/location.h
   ${VALHALLA_SOURCE_DIR}/valhalla/baldr/pathlocation.h
+  ${VALHALLA_SOURCE_DIR}/valhalla/baldr/predicted_traffic.h
   ${VALHALLA_SOURCE_DIR}/valhalla/baldr/rapidjson_utils.h
   ${VALHALLA_SOURCE_DIR}/valhalla/baldr/sign.h
   ${VALHALLA_SOURCE_DIR}/valhalla/baldr/signinfo.h
@@ -75,6 +76,7 @@ valhalla_module(NAME baldr
     nodeinfo.cc
     location.cc
     pathlocation.cc
+    predicted_traffic.cc
     tilehierarchy.cc
     turn.cc
     streetname.cc
