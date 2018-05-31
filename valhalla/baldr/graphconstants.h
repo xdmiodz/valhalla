@@ -135,6 +135,9 @@ constexpr uint32_t kMaxEdgeInfoOffset = 33554431; // 2^25 bytes
 // Maximum length of an edge
 constexpr uint32_t kMaxEdgeLength = 16777215; // 2^24 meters
 
+// Maximum offset to compressed traffic information
+constexpr uint32_t kMaxCompressedOffset = 16777215; // 2^24 bytes
+
 // Maximum number of edges allowed in a turn restriction mask
 constexpr uint32_t kMaxTurnRestrictionEdges = 8;
 
