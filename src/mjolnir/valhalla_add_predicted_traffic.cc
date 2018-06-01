@@ -71,6 +71,8 @@ void add_predicted_traffic(const bpt::ptree& pt,
       for (uint32_t j = 0; j < nodeinfo.edge_count(); j++) {
         DirectedEdge& directededge = tile_builder.directededge_builder(nodeinfo.edge_index() + j);
         tile_builder.predicted_traffic().emplace_back(nodeinfo.edge_index() + j, 0);
+        directededge.set_constrained_flow_speed(40);
+        directededge.set_free_flow_speed(55);
         stat.count++;
       }
     }
