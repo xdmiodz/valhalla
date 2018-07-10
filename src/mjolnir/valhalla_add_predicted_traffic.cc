@@ -58,7 +58,6 @@ struct unique_data_t {
  */
 void ParseTrafficFile(const std::string& directory,
                       const std::string& filename,
-                      const std::string& ext,
                       unique_data_t& unique_data,
                       std::mutex& lock,
                       stats& stat) {
@@ -67,7 +66,7 @@ void ParseTrafficFile(const std::string& directory,
 
   // Open file
   std::string line;
-  std::ifstream file(directory + filename + "." + ext + "." + "csv");
+  std::ifstream file(directory + filename + "." + "csv");
   if (file.is_open()) {
     GraphId last_tile_id;
     std::vector<TrafficSpeeds> ts;
@@ -75,6 +74,7 @@ void ParseTrafficFile(const std::string& directory,
       TrafficSpeeds traffic{};
       tokenizer tok{line, sep};
       uint32_t field_num = 0;
+      uint8_t type = 0;
       GraphId tile_id;
       for (const auto& t : tok) {
         switch (field_num) {
@@ -86,14 +86,21 @@ void ParseTrafficFile(const std::string& directory,
             traffic.id = tmp.id();
           } break;
           case 1:
-            if (ext == "constrained") {
-              traffic.constrained_flow_speed = std::stoi(t);
-              stat.constrained_count++;
-            } else if (ext == "freeflow") {
+            type = std::stoi(t);
+            break;
+          case 2:
+            if (type == 0) {
               traffic.free_flow_speed = std::stoi(t);
               stat.free_flow_count++;
+            } else {
+              //todo compressed data.
             }
             break;
+          case 3:
+            if (type == 0) {
+              traffic.constrained_flow_speed = std::stoi(t);
+              stat.constrained_count++;
+            }
         }
         field_num++;
       }
@@ -144,10 +151,9 @@ void parse_traffic_tiles(const std::string& traffic_dir,
 
   // Iterate through the tiles and parse them
   stats stat{};
-  for (; tile_start != tile_end; ++tile_start) {
-    ParseTrafficFile(traffic_dir, *tile_start, "constrained", unique_data, lock, stat);
-    ParseTrafficFile(traffic_dir, *tile_start, "freeflow", unique_data, lock, stat);
-  }
+  for (; tile_start != tile_end; ++tile_start)
+    ParseTrafficFile(traffic_dir, *tile_start, unique_data, lock, stat);
+
   result.set_value(stat);
 }
 
@@ -273,11 +279,7 @@ int main(int argc, char** argv) {
       auto ext = dir_entry.path().extension();
       if (ext == ".csv") {
         std::string file_name = dir_entry.path().filename().stem().string();
-        size_t speed_type = file_name.find_last_of(".");
-        if (speed_type != std::string::npos) {
-          file_name.substr(0, speed_type);
-          traffic_tiles.emplace(file_name.substr(0, speed_type));
-        }
+        traffic_tiles.emplace(file_name);
       }
     }
   }
