@@ -33,12 +33,14 @@ namespace {
 struct stats {
   uint32_t constrained_count;
   uint32_t free_flow_count;
+  uint32_t compressed_count;
   uint32_t updated_count;
 
   // Accumulate counts from all threads
   void operator()(const stats& other) {
     constrained_count += other.constrained_count;
     free_flow_count += other.free_flow_count;
+    compressed_count += other.compressed_count;
     updated_count += other.updated_count;
   }
 };
@@ -74,7 +76,6 @@ void ParseTrafficFile(const std::string& directory,
       TrafficSpeeds traffic{};
       tokenizer tok{line, sep};
       uint32_t field_num = 0;
-      uint8_t type = 0;
       GraphId tile_id;
       for (const auto& t : tok) {
         switch (field_num) {
@@ -85,22 +86,20 @@ void ParseTrafficFile(const std::string& directory,
             // our key in tile_speeds is the tileID.
             traffic.id = tmp.id();
           } break;
-          case 1:
-            type = std::stoi(t);
-            break;
-          case 2:
-            if (type == 0) {
+          case 1: {
               traffic.free_flow_speed = std::stoi(t);
               stat.free_flow_count++;
-            } else {
-              //todo compressed data.
-            }
-            break;
-          case 3:
-            if (type == 0) {
+          } break;
+          case 2: {
               traffic.constrained_flow_speed = std::stoi(t);
               stat.constrained_count++;
+          } break;
+          case 3: {
+            if (t.size()) {
+              //TODO: compressed logic.
+              stat.compressed_count++;
             }
+          } break;
         }
         field_num++;
       }
@@ -314,8 +313,7 @@ int main(int argc, char** argv) {
   size_t floor = traffic_tiles.size() / threads.size();
   size_t at_ceiling = traffic_tiles.size() - (threads.size() * floor);
   std::unordered_set<std::string>::const_iterator tile_start, tile_end = traffic_tiles.begin();
-  uint32_t constrained_count = 0;
-  uint32_t free_flow_count = 0;
+  uint32_t constrained_count = 0, free_flow_count = 0, compressed_count = 0;
   unique_data_t unique_data;
   std::mutex lock;
   // A place to hold the results of those threads (exceptions, stats)
@@ -343,6 +341,7 @@ int main(int argc, char** argv) {
       auto thread_stats = result.get_future().get();
       constrained_count += thread_stats.constrained_count;
       free_flow_count += thread_stats.free_flow_count;
+      compressed_count += thread_stats.compressed_count;
 
     } catch (std::exception& e) {
       // TODO: throw further up the chain?
@@ -351,6 +350,8 @@ int main(int argc, char** argv) {
 
   LOG_INFO("Parsed " + std::to_string(constrained_count) + " constrained traffic speeds.");
   LOG_INFO("Parsed " + std::to_string(free_flow_count) + " free flow traffic speeds.");
+  LOG_INFO("Parsed " + std::to_string(compressed_count) + " compressed records.");
+
 
   LOG_INFO("Updating speeds for " + std::to_string(unique_data.tile_speeds.size()) + " tiles.");
   floor = unique_data.tile_speeds.size() / threads.size();
