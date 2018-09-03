@@ -10,6 +10,7 @@
 #include <rapidjson/writer.h>
 #include <sstream>
 #include <string>
+#include <chrono>
 
 #include "baldr/rapidjson_utils.h"
 #include "midgard/logging.h"
@@ -43,7 +44,9 @@ public:
 
   void Execute() {
     try {
+      std::cout << std::chrono::system_clock::now() << ": getting ready to execute" << std::endl;
       response = func(actor, request);
+      std::cout << std::chrono::system_clock::now() << ": executed" << std::endl;
     } catch (const valhalla::valhalla_exception_t& e) {
       rapidjson::StringBuffer err_message;
       rapidjson::Writer<rapidjson::StringBuffer> writer(err_message);
@@ -76,6 +79,7 @@ private:
 class Actor : public Napi::ObjectWrap<Actor> {
 public:
   static Napi::Function Init(const Napi::CallbackInfo& info) {
+    std::cout << std::chrono::system_clock::now() << ": initing in node bindings" << std::endl;
     Napi::Env my_env = info.Env();
     Napi::HandleScope scope(my_env);
 
@@ -144,13 +148,16 @@ private:
   Napi::Value generic_action(const Napi::CallbackInfo& info,
                              const std::function<std::string(valhalla::tyr::actor_t& actor,
                                                              const std::string& req)>& actor_func) {
+    std::cout << std::chrono::system_clock::now() << ": generic action" << std::endl;
     if (info.Length() <= 0 || !info[0].IsString() || !info[1].IsFunction()) {
       throw Napi::Error::New(info.Env(), "method must be called with string and callback");
     }
     const std::string req = std::string(info[0].As<Napi::String>());
     Napi::Function callback = info[1].As<Napi::Function>();
 
+    std::cout << std::chrono::system_clock::now() << ": creating new actor worker..." << std::endl;
     ActorWorker* actorWorker = new ActorWorker(callback, req, actor, actor_func);
+    std::cout << std::chrono::system_clock::now() << ": created new actor worker, queuing" << std::endl;
     actorWorker->Queue();
     return info.Env().Undefined();
   }

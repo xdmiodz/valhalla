@@ -34,13 +34,16 @@ struct actor_t::pimpl_t {
 
 actor_t::actor_t(const boost::property_tree::ptree& config, bool auto_cleanup)
     : pimpl(new pimpl_t(config)), auto_cleanup(auto_cleanup) {
+  std::cout << "inside tyr actor constructor - constructing actor" << std::endl;
 }
 
 void actor_t::cleanup() {
+  std::cout << "running actor cleanup" << std::endl;
   pimpl->cleanup();
 }
 
 std::string actor_t::route(const std::string& request_str, const std::function<void()>& interrupt) {
+  std::cout << "starting route" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -57,10 +60,12 @@ std::string actor_t::route(const std::string& request_str, const std::function<v
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending route" << std::endl;
   return bytes;
 }
 
 std::string actor_t::locate(const std::string& request_str, const std::function<void()>& interrupt) {
+  std::cout << "starting locate" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -72,10 +77,12 @@ std::string actor_t::locate(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending locate" << std::endl;
   return json;
 }
 
 std::string actor_t::matrix(const std::string& request_str, const std::function<void()>& interrupt) {
+  std::cout << "starting matrix" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -89,11 +96,13 @@ std::string actor_t::matrix(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending matrix" << std::endl;
   return json;
 }
 
 std::string actor_t::optimized_route(const std::string& request_str,
                                      const std::function<void()>& interrupt) {
+  std::cout << "starting opt route" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -111,11 +120,13 @@ std::string actor_t::optimized_route(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending opt route" << std::endl;
   return bytes;
 }
 
 std::string actor_t::isochrone(const std::string& request_str,
                                const std::function<void()>& interrupt) {
+  std::cout << "starting isochrone" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -129,11 +140,13 @@ std::string actor_t::isochrone(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending isochrone" << std::endl;
   return json;
 }
 
 std::string actor_t::trace_route(const std::string& request_str,
                                  const std::function<void()>& interrupt) {
+  std::cout << "starting trace_route" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -151,11 +164,13 @@ std::string actor_t::trace_route(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending trace_route" << std::endl;
   return bytes;
 }
 
 std::string actor_t::trace_attributes(const std::string& request_str,
                                       const std::function<void()>& interrupt) {
+  std::cout << "starting trace_attributes" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -169,10 +184,12 @@ std::string actor_t::trace_attributes(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending trace_attributes" << std::endl;
   return json;
 }
 
 std::string actor_t::height(const std::string& request_str, const std::function<void()>& interrupt) {
+  std::cout << "staring height" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -184,6 +201,7 @@ std::string actor_t::height(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
+  std::cout << "ending height" << std::endl;
   return json;
 }
 
