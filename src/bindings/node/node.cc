@@ -3,6 +3,7 @@
 #include <boost/optional.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
+#include <chrono>
 #include <functional>
 #include <iostream>
 #include <napi.h>
@@ -10,7 +11,6 @@
 #include <rapidjson/writer.h>
 #include <sstream>
 #include <string>
-#include <chrono>
 
 #include "baldr/rapidjson_utils.h"
 #include "midgard/logging.h"
@@ -157,7 +157,8 @@ private:
 
     std::cout << std::chrono::system_clock::now() << ": creating new actor worker..." << std::endl;
     ActorWorker* actorWorker = new ActorWorker(callback, req, actor, actor_func);
-    std::cout << std::chrono::system_clock::now() << ": created new actor worker, queuing" << std::endl;
+    std::cout << std::chrono::system_clock::now() << ": created new actor worker, queuing"
+              << std::endl;
     actorWorker->Queue();
     return info.Env().Undefined();
   }
