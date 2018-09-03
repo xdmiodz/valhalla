@@ -4,6 +4,7 @@
 #include "odin/worker.h"
 #include "thor/worker.h"
 #include "tyr/serializers.h"
+#include <chrono>
 
 using namespace valhalla;
 using namespace valhalla::loki;
@@ -34,16 +35,16 @@ struct actor_t::pimpl_t {
 
 actor_t::actor_t(const boost::property_tree::ptree& config, bool auto_cleanup)
     : pimpl(new pimpl_t(config)), auto_cleanup(auto_cleanup) {
-  std::cout << "inside tyr actor constructor - constructing actor" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "inside tyr actor constructor - constructing actor" << std::endl;
 }
 
 void actor_t::cleanup() {
-  std::cout << "running actor cleanup" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "running actor cleanup" << std::endl;
   pimpl->cleanup();
 }
 
 std::string actor_t::route(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "starting route" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "starting route" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -60,12 +61,12 @@ std::string actor_t::route(const std::string& request_str, const std::function<v
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending route" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending route" << std::endl;
   return bytes;
 }
 
 std::string actor_t::locate(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "starting locate" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "starting locate" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -77,12 +78,12 @@ std::string actor_t::locate(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending locate" << std::endl;
+  std::cout<< std::chrono::system_clock::now()  << "ending locate" << std::endl;
   return json;
 }
 
 std::string actor_t::matrix(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "starting matrix" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "starting matrix" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -96,13 +97,13 @@ std::string actor_t::matrix(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending matrix" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending matrix" << std::endl;
   return json;
 }
 
 std::string actor_t::optimized_route(const std::string& request_str,
                                      const std::function<void()>& interrupt) {
-  std::cout << "starting opt route" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "starting opt route" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -120,13 +121,13 @@ std::string actor_t::optimized_route(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending opt route" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending opt route" << std::endl;
   return bytes;
 }
 
 std::string actor_t::isochrone(const std::string& request_str,
                                const std::function<void()>& interrupt) {
-  std::cout << "starting isochrone" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "starting isochrone" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -140,13 +141,13 @@ std::string actor_t::isochrone(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending isochrone" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending isochrone" << std::endl;
   return json;
 }
 
 std::string actor_t::trace_route(const std::string& request_str,
                                  const std::function<void()>& interrupt) {
-  std::cout << "starting trace_route" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "starting trace_route" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -164,13 +165,13 @@ std::string actor_t::trace_route(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending trace_route" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending trace_route" << std::endl;
   return bytes;
 }
 
 std::string actor_t::trace_attributes(const std::string& request_str,
                                       const std::function<void()>& interrupt) {
-  std::cout << "starting trace_attributes" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "starting trace_attributes" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -184,12 +185,12 @@ std::string actor_t::trace_attributes(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending trace_attributes" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending trace_attributes" << std::endl;
   return json;
 }
 
 std::string actor_t::height(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "staring height" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "staring height" << std::endl;
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -201,7 +202,7 @@ std::string actor_t::height(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending height" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending height" << std::endl;
   return json;
 }
 
