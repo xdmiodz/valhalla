@@ -35,7 +35,8 @@ struct actor_t::pimpl_t {
 
 actor_t::actor_t(const boost::property_tree::ptree& config, bool auto_cleanup)
     : pimpl(new pimpl_t(config)), auto_cleanup(auto_cleanup) {
-  std::cout << std::chrono::system_clock::now() << "inside tyr actor constructor - constructing actor" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "inside tyr actor constructor - constructing actor"
+            << std::endl;
 }
 
 void actor_t::cleanup() {
@@ -78,7 +79,7 @@ std::string actor_t::locate(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout<< std::chrono::system_clock::now()  << "ending locate" << std::endl;
+  std::cout << std::chrono::system_clock::now() << "ending locate" << std::endl;
   return json;
 }
 
