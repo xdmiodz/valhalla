@@ -72,12 +72,27 @@ public:
       writer.EndObject();
       LOG_INFO("finished creating err message, about to throw error");
       throw std::runtime_error(err_message.GetString());
-    } catch (const std::exception& e) { throw std::runtime_error(e.what()); }
+    } catch (const std::exception& e) { 
+      actor.cleanup();
+      throw std::runtime_error(e.what());
+    }
   }
 
   void OnOK() {
     Napi::HandleScope scope(Env());
     Callback().Call({Env().Undefined(), Napi::String::New(Env(), response)});
+  }
+
+  void OnError(const Napi::Error& e) {
+    Napi::Env env = Env();
+
+    Callback().MakeCallback(
+      Receiver().Value(),
+      {
+        e.Value(),
+        env.Undefined()
+      }
+    );
   }
 
   valhalla::tyr::actor_t actor;
