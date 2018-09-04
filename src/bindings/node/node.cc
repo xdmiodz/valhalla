@@ -57,6 +57,8 @@ public:
       response = func(actor, request);
       LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - executed");
     } catch (const valhalla::valhalla_exception_t& e) {
+      actor.cleanup();
+      LOG_INFO("inside catch, creating error message");
       rapidjson::StringBuffer err_message;
       rapidjson::Writer<rapidjson::StringBuffer> writer(err_message);
 
@@ -68,6 +70,7 @@ public:
       writer.Key("message");
       writer.String(e.message);
       writer.EndObject();
+      LOG_INFO("finished creating err message, about to throw error");
       throw std::runtime_error(err_message.GetString());
     } catch (const std::exception& e) { throw std::runtime_error(e.what()); }
   }
