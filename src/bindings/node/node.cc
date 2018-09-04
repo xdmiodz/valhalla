@@ -11,12 +11,20 @@
 #include <rapidjson/writer.h>
 #include <sstream>
 #include <string>
+#include <thread>
 
 #include "baldr/rapidjson_utils.h"
 #include "midgard/logging.h"
 #include "midgard/util.h"
 #include "tyr/actor.h"
 #include "worker.h"
+
+// for debugging
+static std::string thread_id_string(const std::thread::id& th) {
+  std::stringstream ss;
+  ss << th;
+  return ss.str();
+}
 
 boost::property_tree::ptree json_to_pt(const char* json) {
   std::stringstream ss;
@@ -44,9 +52,10 @@ public:
 
   void Execute() {
     try {
-      std::cout << ": getting ready to execute" << std::endl;
+      LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
+               " - getting ready to execute");
       response = func(actor, request);
-      std::cout << ": executed" << std::endl;
+      LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - executed");
     } catch (const valhalla::valhalla_exception_t& e) {
       rapidjson::StringBuffer err_message;
       rapidjson::Writer<rapidjson::StringBuffer> writer(err_message);
@@ -79,7 +88,8 @@ private:
 class Actor : public Napi::ObjectWrap<Actor> {
 public:
   static Napi::Function Init(const Napi::CallbackInfo& info) {
-    std::cout << ": initing in node bindings" << std::endl;
+    LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
+             " - initing in node bindings");
     Napi::Env my_env = info.Env();
     Napi::HandleScope scope(my_env);
 
@@ -148,16 +158,18 @@ private:
   Napi::Value generic_action(const Napi::CallbackInfo& info,
                              const std::function<std::string(valhalla::tyr::actor_t& actor,
                                                              const std::string& req)>& actor_func) {
-    std::cout << ": generic action" << std::endl;
+    LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - generic action");
     if (info.Length() <= 0 || !info[0].IsString() || !info[1].IsFunction()) {
       throw Napi::Error::New(info.Env(), "method must be called with string and callback");
     }
     const std::string req = std::string(info[0].As<Napi::String>());
     Napi::Function callback = info[1].As<Napi::Function>();
 
-    std::cout << ": creating new actor worker..." << std::endl;
+    LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
+             " - creating new actor worker...");
     ActorWorker* actorWorker = new ActorWorker(callback, req, actor, actor_func);
-    std::cout << ": created new actor worker, queuing" << std::endl;
+    LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
+             " - created new actor worker, queuing");
     actorWorker->Queue();
     return info.Env().Undefined();
   }

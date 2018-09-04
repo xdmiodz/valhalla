@@ -1,9 +1,18 @@
 #include "tyr/actor.h"
 #include "baldr/rapidjson_utils.h"
 #include "loki/worker.h"
+#include "midgard/logging.h"
 #include "odin/worker.h"
 #include "thor/worker.h"
+#include "thread"
 #include "tyr/serializers.h"
+
+// for debugging
+static std::string thread_id_string(const std::thread::id& th) {
+  std::stringstream ss;
+  ss << th;
+  return ss.str();
+}
 
 using namespace valhalla;
 using namespace valhalla::loki;
@@ -34,16 +43,17 @@ struct actor_t::pimpl_t {
 
 actor_t::actor_t(const boost::property_tree::ptree& config, bool auto_cleanup)
     : pimpl(new pimpl_t(config)), auto_cleanup(auto_cleanup) {
-  std::cout << "inside tyr actor constructor - constructing actor" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
+           " - inside tyr actor constructor - constructing actor");
 }
 
 void actor_t::cleanup() {
-  std::cout << "running actor cleanup" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - running actor cleanup");
   pimpl->cleanup();
 }
 
 std::string actor_t::route(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "starting route" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - starting route");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -60,12 +70,12 @@ std::string actor_t::route(const std::string& request_str, const std::function<v
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout <<"ending route" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - ending route");
   return bytes;
 }
 
 std::string actor_t::locate(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "starting locate" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - starting locate");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -77,12 +87,12 @@ std::string actor_t::locate(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending locate" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - ending locate");
   return json;
 }
 
 std::string actor_t::matrix(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "starting matrix" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - starting matrix");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -96,13 +106,13 @@ std::string actor_t::matrix(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending matrix" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - ending matrix");
   return json;
 }
 
 std::string actor_t::optimized_route(const std::string& request_str,
                                      const std::function<void()>& interrupt) {
-  std::cout << "starting opt route" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - starting opt route");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -120,13 +130,13 @@ std::string actor_t::optimized_route(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending opt route" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - ending opt route");
   return bytes;
 }
 
 std::string actor_t::isochrone(const std::string& request_str,
                                const std::function<void()>& interrupt) {
-  std::cout << "starting isochrone" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - starting isochrone");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -140,13 +150,13 @@ std::string actor_t::isochrone(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending isochrone" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - ending isochrone");
   return json;
 }
 
 std::string actor_t::trace_route(const std::string& request_str,
                                  const std::function<void()>& interrupt) {
-  std::cout << "starting trace_route" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - starting trace_route");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -164,13 +174,14 @@ std::string actor_t::trace_route(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending trace_route" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - ending trace_route");
   return bytes;
 }
 
 std::string actor_t::trace_attributes(const std::string& request_str,
                                       const std::function<void()>& interrupt) {
-  std::cout << "starting trace_attributes" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
+           " - starting trace_attributes");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -184,12 +195,13 @@ std::string actor_t::trace_attributes(const std::string& request_str,
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending trace_attributes" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
+           " - ending trace_attributes");
   return json;
 }
 
 std::string actor_t::height(const std::string& request_str, const std::function<void()>& interrupt) {
-  std::cout << "staring height" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - staring height");
   // set the interrupts
   pimpl->set_interrupts(interrupt);
   // parse the request
@@ -201,7 +213,7 @@ std::string actor_t::height(const std::string& request_str, const std::function<
   if (auto_cleanup) {
     cleanup();
   }
-  std::cout << "ending height" << std::endl;
+  LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - ending height");
   return json;
 }
 
