@@ -42,10 +42,10 @@ class ActorWorker : public Napi::AsyncWorker {
 public:
   ActorWorker(Napi::Function& callback,
               const std::string request,
-              valhalla::tyr::actor_t& actor,
-              const std::function<std::string(valhalla::tyr::actor_t& actor,
-                                              const std::string& request)>& func)
-      : Napi::AsyncWorker(callback), request(request), actor(actor), func(func) {
+              /*valhalla::tyr::actor_t& actor,*/
+              const std::function<std::string(/*valhalla::tyr::actor_t& actor,
+                                              const std::string& request*/)>& func)
+      : Napi::AsyncWorker(callback), request(request), /*actor(actor),*/ func(func) {
   }
   ~ActorWorker() {
   }
@@ -54,10 +54,10 @@ public:
     try {
       LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
                " - getting ready to execute");
-      response = func(actor, request);
+      response = func(/*actor, request*/);
       LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - executed");
     } catch (const valhalla::valhalla_exception_t& e) {
-      actor.cleanup();
+      //actor.cleanup();
       LOG_INFO("inside catch, creating error message");
       rapidjson::StringBuffer err_message;
       rapidjson::Writer<rapidjson::StringBuffer> writer(err_message);
@@ -73,7 +73,7 @@ public:
       LOG_INFO("finished creating err message, about to throw error");
       throw std::runtime_error(err_message.GetString());
     } catch (const std::exception& e) { 
-      actor.cleanup();
+      //actor.cleanup();
       throw std::runtime_error(e.what());
     }
   }
@@ -95,8 +95,8 @@ public:
     );
   }
 
-  valhalla::tyr::actor_t actor;
-  std::function<std::string(valhalla::tyr::actor_t& actor, std::string& request)> func;
+  //valhalla::tyr::actor_t actor;
+  std::function<std::string(/*valhalla::tyr::actor_t& actor, std::string& request*/)> func;
 
 private:
   std::string request;
@@ -149,7 +149,7 @@ public:
   };
 
   Actor(const Napi::CallbackInfo& info)
-      : actor(get_conf_from_info(info), true), Napi::ObjectWrap<Actor>(info) {
+      : /* actor(get_conf_from_info(info), true),*/ Napi::ObjectWrap<Actor>(info) {
     Napi::Env env = info.Env();
     Napi::HandleScope scope(env);
 
@@ -174,8 +174,8 @@ private:
   }
 
   Napi::Value generic_action(const Napi::CallbackInfo& info,
-                             const std::function<std::string(valhalla::tyr::actor_t& actor,
-                                                             const std::string& req)>& actor_func) {
+                             const std::function<std::string(/*valhalla::tyr::actor_t& actor,
+                                                             const std::string& req*/)>& actor_func) {
     LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) + " - generic action");
     if (info.Length() <= 0 || !info[0].IsString() || !info[1].IsFunction()) {
       throw Napi::Error::New(info.Env(), "method must be called with string and callback");
@@ -185,7 +185,7 @@ private:
 
     LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
              " - creating new actor worker...");
-    ActorWorker* actorWorker = new ActorWorker(callback, req, actor, actor_func);
+    ActorWorker* actorWorker = new ActorWorker(callback, req, /*actor, */actor_func);
     LOG_INFO("thread id: " + thread_id_string(std::this_thread::get_id()) +
              " - created new actor worker, queuing");
     actorWorker->Queue();
@@ -194,59 +194,59 @@ private:
 
   Napi::Value Route(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.route(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.route(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value Locate(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.locate(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.locate(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value Matrix(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.matrix(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.matrix(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value OptimizedRoute(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.optimized_route(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.optimized_route(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value Isochrone(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.isochrone(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.isochrone(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value TraceRoute(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.trace_route(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.trace_route(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value TraceAttributes(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.trace_attributes(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.trace_attributes(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value Height(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.height(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.height(request)*/ R"({"ok": true})"; });
   }
 
   Napi::Value TransitAvailable(const Napi::CallbackInfo& info) {
     return generic_action(info,
-                          [](valhalla::tyr::actor_t& actor, const std::string& request)
-                              -> std::string { return actor.transit_available(request); });
+                          [](/*valhalla::tyr::actor_t& actor, const std::string& request*/)
+                              -> std::string { return /*actor.transit_available(request)*/ R"({"ok": true})"; });
   }
 
-  valhalla::tyr::actor_t actor;
+  // valhalla::tyr::actor_t actor;
 };
 
 Napi::FunctionReference Actor::constructor;
