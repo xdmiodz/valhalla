@@ -566,7 +566,7 @@ struct tar {
     }
   };
 
-  tar(const std::string& tar_file, bool regular_files_only = true)
+  tar(const std::string& tar_file, bool regular_files_only = true, bool is_memmap)
       : tar_file(tar_file), corrupt_blocks(0) {
     // get the file size
     struct stat s;
@@ -579,36 +579,72 @@ struct tar {
       return;
     }
 
-    // map the file
-    mm.map(tar_file, s.st_size);
+    if (is_memmap) {
+      // map the file
+      mm.map(tar_file, s.st_size);
 
-    // rip through the tar to see whats in it noting that most tars end with 2 empty blocks
-    // but we can concatenate tars and get empty blocks in between so we'll just be pretty
-    // lax about it and we'll count the ones we cant make sense of
-    const char* position = mm.get();
-    while (position < mm.get() + mm.size()) {
-      // get the header for this file
-      const header_t* h = static_cast<const header_t*>(static_cast<const void*>(position));
-      position += sizeof(header_t);
-      // if it doesnt checkout ignore it and move on one block at a time
-      if (!h->verify()) {
-        corrupt_blocks += !h->blank();
-        continue;
+      // rip through the tar to see whats in it noting that most tars end with 2 empty blocks
+      // but we can concatenate tars and get empty blocks in between so we'll just be pretty
+      // lax about it and we'll count the ones we cant make sense of
+      const char* position = mm.get();
+      while (position < mm.get() + mm.size()) {
+        // get the header for this file
+        const header_t* h = static_cast<const header_t*>(static_cast<const void*>(position));
+        position += sizeof(header_t);
+        // if it doesnt checkout ignore it and move on one block at a time
+        if (!h->verify()) {
+          corrupt_blocks += !h->blank();
+          continue;
+        }
+        auto size = h->get_file_size();
+        // do we record entry file or not
+        if (!regular_files_only || (h->typeflag == '0' || h->typeflag == '\0')) {
+          contents.emplace(std::piecewise_construct, std::forward_as_tuple(std::string{h->name}),
+                           std::forward_as_tuple(position, size));
+        }
+        // every entry's data is rounded to the nearst header_t sized "block"
+        auto blocks = static_cast<size_t>(std::ceil(static_cast<double>(size) / sizeof(header_t)));
+        position += blocks * sizeof(header_t);
       }
-      auto size = h->get_file_size();
-      // do we record entry file or not
-      if (!regular_files_only || (h->typeflag == '0' || h->typeflag == '\0')) {
-        contents.emplace(std::piecewise_construct, std::forward_as_tuple(std::string{h->name}),
-                         std::forward_as_tuple(position, size));
-      }
-      // every entry's data is rounded to the nearst header_t sized "block"
-      auto blocks = static_cast<size_t>(std::ceil(static_cast<double>(size) / sizeof(header_t)));
-      position += blocks * sizeof(header_t);
+      // read over file using fstream
+    } else {
+      fs(tar_file, std::ios::binary);
+        if (!fs)
+          throw std::runtime_error("Failed to open " + tar_file);
+
+        std::streampos begin,end;
+        // returns a value of the stream position & seek to the end of the file
+        begin = fs.tellg();
+        while (begin < fs.seekp (0, std::ios::end)) {
+           // get the header for this file
+           const header_t* h = static_cast<const header_t*>(static_cast<const void*>(begin));
+           begin += sizeof(header_t);
+           // if it doesnt checkout ignore it and move on one block at a time
+           if (!h->verify()) {
+             corrupt_blocks += !h->blank();
+             continue;
+           }
+           auto size = h->get_file_size();
+           // do we record entry file or not
+           if (!regular_files_only || (h->typeflag == '0' || h->typeflag == '\0')) {
+             contents.emplace(std::piecewise_construct, std::forward_as_tuple(std::string{h->name}),
+                              std::forward_as_tuple(begin, size));
+           }
+           // every entry's data is rounded to the nearst header_t sized "block"
+           auto blocks = static_cast<size_t>(std::ceil(static_cast<double>(size) / sizeof(header_t)));
+           end = fs.tellg();
+           fs.read(blocks, end);
+           begin += blocks * sizeof(header_t);
+        }
+        fs.close();
+        std::cout << "size is: " << (end-begin) << " bytes.\n";
     }
   }
 
   std::string tar_file;
+  bool is_memmap = true;
   mem_map<char> mm;
+  std::fstream fs;
   using entry_name_t = std::string;
   using entry_location_t = std::pair<const char*, size_t>;
   std::unordered_map<entry_name_t, entry_location_t> contents;
