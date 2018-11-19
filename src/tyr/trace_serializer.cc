@@ -338,6 +338,7 @@ json::ArrayPtr serialize_matched_points(const AttributesController& controller,
     if (controller.attributes.at(kMatchedPoint)) {
       match_points_map->emplace("lon", json::fp_t{match_result.lnglat.first, 6});
       match_points_map->emplace("lat", json::fp_t{match_result.lnglat.second, 6});
+      match_points_map->emplace("time", static_cast<int64_t>(match_result.epoch_time));
     }
 
     // Process matched type

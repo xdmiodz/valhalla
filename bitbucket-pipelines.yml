@@ -1,0 +1,30 @@
+definitions:
+  caches:
+    git-modules: .git/modules
+  step: &Dockerbuild
+    name: Dockerbuild
+    services:
+    - docker
+    caches:
+    - git-modules
+    - docker
+    script:
+    - cd third_party && git submodule update --recursive --init && cd ..
+    - docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_PASSWORD
+    - docker build -t $IMAGE_NAME:$BITBUCKET_BRANCH -t $IMAGE_NAME:${BITBUCKET_COMMIT:0:8} -f Dockerfile .
+
+    - docker push $IMAGE_NAME:$BITBUCKET_BRANCH
+    - docker push $IMAGE_NAME:${BITBUCKET_COMMIT:0:8}
+services:
+  docker:
+    memory: 4096
+pipelines:
+  caches:
+  - git-modules
+  - docker
+  default:
+  - step: *Dockerbuild
+
+options:
+  docker: true
+  size: 2x
