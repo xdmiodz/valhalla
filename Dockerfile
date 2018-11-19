@@ -45,7 +45,6 @@ RUN  apt-get update && \
     rm -rf /code && \
     apt autoremove  -y
 
-EXPOSE 8002
 WORKDIR /valhalla
 # run valhalla service in 4 threads
 CMD ["./run.sh"]
