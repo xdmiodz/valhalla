@@ -46,5 +46,3 @@ RUN  apt-get update && \
     apt autoremove  -y
 
 WORKDIR /valhalla
-# run valhalla service in 4 threads
-CMD ["./run.sh"]
