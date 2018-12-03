@@ -35,6 +35,7 @@ void AStarPathAlgorithm::Clear() {
   // Clear the edge labels and destination list. Reset the adjacency list
   // and clear edge status.
   edgelabels_.clear();
+  edgelabels_.shrink_to_fit();
   destinations_.clear();
   adjacencylist_.reset();
   edgestatus_.clear();

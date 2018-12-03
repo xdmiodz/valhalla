@@ -59,8 +59,11 @@ void Isochrone::Clear() {
   // Clear the edge labels, edge status flags, and adjacency list
   // TODO - clear only the edge label set that was used?
   edgelabels_.clear();
+  edgelabels_.shrink_to_fit();
   bdedgelabels_.clear();
+  bdedgelabels_.shrink_to_fit();
   mmedgelabels_.clear();
+  mmedgelabels_.shrink_to_fit();
   adjacencylist_.reset();
   edgestatus_.clear();
 }

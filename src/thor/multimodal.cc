@@ -81,6 +81,7 @@ void MultiModalPathAlgorithm::Init(const PointLL& origll,
 void MultiModalPathAlgorithm::Clear() {
   // Clear the edge labels and destination list
   edgelabels_.clear();
+  edgelabels_.shrink_to_fit();
   destinations_.clear();
 
   // Clear elements from the adjacency list

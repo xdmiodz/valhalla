@@ -69,8 +69,10 @@ void CostMatrix::Clear() {
 
   for (auto& el : source_edgelabel_) {
     el.clear();
+    el.shrink_to_fit();
   }
   source_edgelabel_.clear();
+  source_edgelabel_.shrink_to_fit();
 
   for (auto& es : source_edgestatus_) {
     es.clear();
@@ -85,8 +87,10 @@ void CostMatrix::Clear() {
 
   for (auto& el : target_edgelabel_) {
     el.clear();
+    el.shrink_to_fit();
   }
   target_edgelabel_.clear();
+  target_edgelabel_.shrink_to_fit();
 
   for (auto& es : target_edgestatus_) {
     es.clear();

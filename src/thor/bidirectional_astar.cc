@@ -37,7 +37,9 @@ BidirectionalAStar::~BidirectionalAStar() {
 // Clear the temporary information generated during path construction.
 void BidirectionalAStar::Clear() {
   edgelabels_forward_.clear();
+  edgelabels_forward_.shrink_to_fit();
   edgelabels_reverse_.clear();
+  edgelabels_reverse_.shrink_to_fit();
   adjacencylist_forward_.reset();
   adjacencylist_reverse_.reset();
   edgestatus_forward_.clear();

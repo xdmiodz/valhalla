@@ -53,6 +53,7 @@ float TimeDistanceMatrix::GetCostThreshold(const float max_matrix_distance) cons
 void TimeDistanceMatrix::Clear() {
   // Clear the edge labels and destination list
   edgelabels_.clear();
+  edgelabels_.shrink_to_fit();
   destinations_.clear();
   dest_edges_.clear();
 
