@@ -471,9 +471,16 @@ void from_json(rapidjson::Document& doc, odin::DirectionsOptions& options) {
     options.set_language(*language);
   }
 
+  // deprecated
   auto narrative = rapidjson::get_optional<bool>(doc, "/narrative");
-  if (narrative) {
-    options.set_narrative(*narrative);
+  if (narrative && !*narrative) {
+    options.set_directions_type(odin::DirectionsType::none);
+  }
+
+  auto dir_type = rapidjson::get_optional<std::string>(doc, "/directions_type");
+  odin::DirectionsType directions_type;
+  if (dir_type && odin::DirectionsType_Parse(*dir_type, &directions_type)) {
+    options.set_directions_type(directions_type);
   }
 
   auto encoded_polyline = rapidjson::get_optional<std::string>(doc, "/encoded_polyline");
@@ -590,7 +597,8 @@ void from_json(rapidjson::Document& doc, odin::DirectionsOptions& options) {
   // time type
   auto date_time_type = rapidjson::get_optional<float>(doc, "/date_time/type");
   if (date_time_type && odin::DirectionsOptions::DateTimeType_IsValid(*date_time_type)) {
-    options.set_date_time_type(static_cast<odin::DirectionsOptions::DateTimeType>(*date_time_type));
+    auto const v = static_cast<int>(*date_time_type);
+    options.set_date_time_type(static_cast<odin::DirectionsOptions::DateTimeType>(v));
   } // not specified but you want transit, then we default to current
   else if (options.has_costing() &&
            (options.costing() == odin::multimodal || options.costing() == odin::transit)) {
@@ -899,6 +907,19 @@ const std::string& FilterAction_Name(const odin::FilterAction action) {
   };
   auto i = actions.find(action);
   return i == actions.cend() ? empty : i->second;
+}
+
+bool DirectionsType_Parse(const std::string& dtype, odin::DirectionsType* t) {
+  static const std::unordered_map<std::string, odin::DirectionsType> types{
+      {"none", odin::DirectionsType::none},
+      {"maneuvers", odin::DirectionsType::maneuvers},
+      {"instructions", odin::DirectionsType::instructions},
+  };
+  auto i = types.find(dtype);
+  if (i == types.cend())
+    return false;
+  *t = i->second;
+  return true;
 }
 } // namespace odin
 

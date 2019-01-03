@@ -47,10 +47,18 @@
 #endif
 
 #ifdef _MSC_VER
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 1
+#endif
+#ifndef VC_EXTRALEAN
 #define VC_EXTRALEAN 1
+#endif
+#ifndef _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_DEPRECATE 1
+#endif
+#ifndef _CRT_NONSTDC_NO_WARNINGS
 #define _CRT_NONSTDC_NO_WARNINGS 1
+#endif
 #include <windows.h>
 
 #define PROT_READ 0x01
@@ -571,7 +579,7 @@ struct tar {
     // get the file size
     struct stat s;
     if (stat(tar_file.c_str(), &s))
-      throw std::runtime_error("(stat): " + tar_file + strerror(errno));
+      throw std::runtime_error("(stat): " + tar_file + " " + strerror(errno));
     if (s.st_size == 0 || (s.st_size % sizeof(header_t)) != 0) {
       throw std::runtime_error(tar_file + "(stat): invalid archive size " +
                                std::to_string(s.st_size) + " with header size " +

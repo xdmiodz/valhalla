@@ -10,8 +10,8 @@
 #include "odin/util.h"
 #include "tyr/serializers.h"
 
-#include <valhalla/proto/directions_options.pb.h>
-#include <valhalla/proto/tripdirections.pb.h>
+#include "proto/directions_options.pb.h"
+#include "proto/tripdirections.pb.h"
 
 using namespace valhalla;
 using namespace valhalla::midgard;
@@ -21,6 +21,8 @@ using namespace valhalla::tyr;
 using namespace std;
 
 namespace {
+const std::string kSignElementDelimiter = ", ";
+const std::string kDestinationsDelimiter = ": ";
 
 namespace osrm_serializers {
 /*
@@ -141,7 +143,9 @@ static_cast<int>(valhalla::odin::TripDirections_Maneuver_Type_kDestinationLeft),
 **/
 
 // Add OSRM route summary information: distance, duration
-void route_summary(json::MapPtr& route, const std::list<valhalla::odin::TripDirections>& legs) {
+void route_summary(json::MapPtr& route,
+                   const std::list<valhalla::odin::TripDirections>& legs,
+                   bool imperial) {
   // Compute total distance and duration
   float duration = 0.0f;
   float distance = 0.0f;
@@ -151,7 +155,7 @@ void route_summary(json::MapPtr& route, const std::list<valhalla::odin::TripDire
   }
 
   // Convert distance to meters. Output distance and duration.
-  distance *= 1000.0f;
+  distance *= imperial ? 1609.34f : 1000.0f;
   route->emplace("distance", json::fp_t{distance, 1});
   route->emplace("duration", json::fp_t{duration, 1});
 
@@ -185,19 +189,6 @@ std::string full_shape(const std::list<valhalla::odin::TripDirections>& legs,
                    decoded_leg.end());
   }
   return midgard::encode(decoded);
-}
-
-// Convenience method to get the street names for the maneuver
-// TODO - split into name and ref
-std::string street_names(const odin::TripDirections::Maneuver& maneuver) {
-  std::string street;
-  for (const auto& name : maneuver.street_name()) {
-    if (street.size() > 0) {
-      street += ';';
-    }
-    street += name;
-  }
-  return street;
 }
 
 // Serialize waypoints for optimized route. Note that OSRM retains the
@@ -365,12 +356,10 @@ json::ArrayPtr intersections(const valhalla::odin::TripDirections::Maneuver& man
 }
 
 // Add exits (exit numbers) along a step/maneuver.
-std::string exits(const valhalla::odin::TripDirections::Maneuver& maneuver) {
-  // Iterate through the signs for this maneuver
-  uint32_t i = 0;
+std::string exits(const valhalla::odin::TripDirections_Maneuver_Sign& sign) {
+  // Iterate through the exit numbers
   std::string exits;
-  const auto& sign = maneuver.sign();
-  for (const auto& number : maneuver.sign().exit_number_elements()) {
+  for (const auto& number : sign.exit_numbers()) {
     if (!exits.empty()) {
       exits += "; ";
     }
@@ -379,46 +368,106 @@ std::string exits(const valhalla::odin::TripDirections::Maneuver& maneuver) {
   return exits;
 }
 
-// Add destinations along a step/maneuver. Constructs a destinations
-// string.
-std::string destinations(const valhalla::odin::TripDirections::Maneuver& maneuver) {
-  // Iterate through the signs for this maneuver
-  std::string dest;
-  const auto& sign = maneuver.sign();
-  uint32_t i = 0;
-  for (const auto& branch : maneuver.sign().exit_branch_elements()) {
-    if (i == 0 && !dest.empty()) {
-      dest += ": ";
+// Compile and return the refs of the specified list
+// TODO we could enhance by limiting results by using consecutive count
+std::string get_sign_element_refs(
+    const google::protobuf::RepeatedPtrField<::valhalla::odin::TripDirections_Maneuver_SignElement>&
+        sign_elements,
+    const std::string& delimiter = kSignElementDelimiter) {
+  std::string refs;
+  for (const auto& sign_element : sign_elements) {
+    // Only process refs
+    if (sign_element.is_route_number()) {
+      // If refs is not empty, append specified delimiter
+      if (!refs.empty()) {
+        refs += delimiter;
+      }
+      // Append sign element
+      refs += sign_element.text();
     }
-    dest += branch.text();
-    if (i < maneuver.sign().exit_branch_elements().size() - 1) {
-      dest += ", ";
-    }
-    i++;
   }
-  i = 0;
-  for (const auto& toward : maneuver.sign().exit_toward_elements()) {
-    if (i == 0 && !dest.empty() && dest.back() != ' ') {
-      dest += ": ";
+  return refs;
+}
+
+// Compile and return the nonrefs of the specified list
+// TODO we could enhance by limiting results by using consecutive count
+std::string get_sign_element_nonrefs(
+    const google::protobuf::RepeatedPtrField<::valhalla::odin::TripDirections_Maneuver_SignElement>&
+        sign_elements,
+    const std::string& delimiter = kSignElementDelimiter) {
+  std::string nonrefs;
+  for (const auto& sign_element : sign_elements) {
+    // Only process nonrefs
+    if (!(sign_element.is_route_number())) {
+      // If nonrefs is not empty, append specified delimiter
+      if (!nonrefs.empty()) {
+        nonrefs += delimiter;
+      }
+      // Append sign element
+      nonrefs += sign_element.text();
     }
-    dest += toward.text();
-    if (i < maneuver.sign().exit_toward_elements().size() - 1) {
-      dest += ", ";
-    }
-    i++;
   }
-  i = 0;
-  for (const auto& name : maneuver.sign().exit_name_elements()) {
-    if (i == 0 && !dest.empty() && dest.back() != ' ') {
-      dest += ": ";
-    }
-    dest += name.text();
-    if (i < maneuver.sign().exit_name_elements().size() - 1) {
-      dest += ", ";
-    }
-    i++;
+  return nonrefs;
+}
+
+// Add destinations along a step/maneuver. Constructs a destinations string.
+// Here are the destinations formats:
+//   1. <ref>
+//   2. <non-ref>
+//   3. <ref>: <non-ref>
+// Each <ref> or <non-ref> could have one or more items and will separated with ", "
+//   for example: "I 99, US 220, US 30: Altoona, Johnstown"
+std::string destinations(const valhalla::odin::TripDirections_Maneuver_Sign& sign) {
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Process the refs
+  // Get the branch refs
+  std::string branch_refs = get_sign_element_refs(sign.exit_onto_streets());
+
+  // Get the toward refs
+  std::string toward_refs = get_sign_element_refs(sign.exit_toward_locations());
+
+  // Create the refs by combining the branch and toward ref lists
+  std::string refs = branch_refs;
+  // If needed, add the delimiter between the lists
+  if (!refs.empty() && !toward_refs.empty()) {
+    refs += kSignElementDelimiter;
   }
-  return dest;
+  refs += toward_refs;
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Process the nonrefs
+  // Get the branch nonrefs
+  std::string branch_nonrefs = get_sign_element_nonrefs(sign.exit_onto_streets());
+
+  // Get the towards nonrefs
+  std::string toward_nonrefs = get_sign_element_nonrefs(sign.exit_toward_locations());
+
+  // Get the name nonrefs
+  std::string name_nonrefs = get_sign_element_nonrefs(sign.exit_names());
+
+  // Create nonrefs by combining the branch, toward, name nonref lists
+  std::string nonrefs = branch_nonrefs;
+  // If needed, add the delimiter between the lists
+  if (!nonrefs.empty() && !toward_nonrefs.empty()) {
+    nonrefs += kSignElementDelimiter;
+  }
+  nonrefs += toward_nonrefs;
+  // If needed, add the delimiter between lists
+  if (!nonrefs.empty() && !name_nonrefs.empty()) {
+    nonrefs += kSignElementDelimiter;
+  }
+  nonrefs += name_nonrefs;
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Process the destinations
+  std::string destinations = refs;
+  if (!refs.empty() && !nonrefs.empty()) {
+    destinations += kDestinationsDelimiter;
+  }
+  destinations += nonrefs;
+
+  return destinations;
 }
 
 // Get the turn modifier based on incoming edge bearing and outgoing edge
@@ -631,8 +680,8 @@ json::MapPtr osrm_maneuver(const valhalla::odin::TripDirections::Maneuver& maneu
 
       // Check if previous maneuver and current maneuver have same name
       // TODO - more extensive name comparison method?
-      if (prior_edge.name().size() > 0 && prior_edge.name().size() == current_edge.name().size() &&
-          (prior_edge.name(0) != current_edge.name(0))) {
+      if (prior_edge.name_size() > 0 && prior_edge.name_size() == current_edge.name_size() &&
+          (prior_edge.name(0).value() != current_edge.name(0).value())) {
         new_name = true;
       }
 
@@ -659,9 +708,9 @@ json::MapPtr osrm_maneuver(const valhalla::odin::TripDirections::Maneuver& maneu
 std::string maneuver_geometry(const uint32_t begin_idx,
                               const uint32_t end_idx,
                               const std::vector<PointLL>& shape) {
-  // Must add one to the end range since it is exclusive
+  // Must add one to the end range since maneuver end shape index is exclusive
   std::vector<PointLL> maneuver_shape(shape.begin() + begin_idx, shape.begin() + end_idx + 1);
-  return std::string(midgard::encode(maneuver_shape));
+  return midgard::encode(maneuver_shape);
 }
 
 // Get the mode
@@ -690,62 +739,25 @@ std::string get_mode(const valhalla::odin::TripDirections::Maneuver& maneuver,
   }
 }
 
-bool is_ref_name(const valhalla::odin::TripDirections::Maneuver& maneuver,
-                 const std::string& name,
-                 std::list<odin::TripPath>::const_iterator path_leg) {
-
-  for (uint32_t i = maneuver.begin_path_index(); i < maneuver.end_path_index(); i++) {
-
-    // Get names and refs for this maneuver
-    auto edgenames = path_leg->node(i).edge().name();
-    auto edgerefs = path_leg->node(i).edge().name_is_ref();
-
-    // Check if the name is a name or ref
-    // TODO - at some point we probably want to pull is_ref into the
-    // maneuver.
-    if (edgenames.size() != edgerefs.size()) {
-      return true;
-    }
-    auto edgeref = edgerefs.begin();
-    for (const auto& edgename : edgenames) {
-      if (edgename == name) {
-        return *edgeref;
-      }
-      edgeref++;
-    }
-  }
-  return true;
-}
-
 // Get the names and ref names
 std::pair<std::string, std::string>
-names_and_refs(const valhalla::odin::TripDirections::Maneuver& maneuver,
-               std::list<odin::TripPath>::const_iterator path_leg) {
+names_and_refs(const valhalla::odin::TripDirections::Maneuver& maneuver) {
   std::string names, refs;
 
   for (const auto& name : maneuver.street_name()) {
     // Check if the name is a ref
-    if (is_ref_name(maneuver, name, path_leg)) {
-      if (refs.size() > 0) {
+    if (name.is_route_number()) {
+      if (!refs.empty()) {
         refs += "; ";
       }
-      refs += name;
+      refs += name.value();
     } else {
-      if (names.size() > 0) {
+      if (!names.empty()) {
         names += "; ";
       }
-      names += name;
+      names += name.value();
     }
   }
-
-  /** TODO - not sure if we want begin names or street names
-  std::string begin_names;
-  for (const auto& name : maneuver.begin_street_name()) {
-    if (begin_names.size() > 0) {
-      begin_names += ';';
-    }
-    begin_names += name;
-  } */
 
   return std::make_pair(names, refs);
 }
@@ -777,7 +789,8 @@ json::MapPtr annotations(std::list<odin::TripPath>::const_iterator path_leg) {
 
 // Serialize each leg
 json::ArrayPtr serialize_legs(const std::list<valhalla::odin::TripDirections>& legs,
-                              const std::list<odin::TripPath>& path_legs) {
+                              const std::list<odin::TripPath>& path_legs,
+                              bool imperial) {
   auto output_legs = json::array({});
 
   // TODO: verify that path_legs is same size as legs
@@ -809,9 +822,10 @@ json::ArrayPtr serialize_legs(const std::list<valhalla::odin::TripDirections>& l
                                                   maneuver.end_shape_index(), shape));
 
       // Add mode, driving side, weight, distance, duration, name
-      float distance = maneuver.length() * 1000.0f;
+      float distance = maneuver.length() * (imperial ? 1609.34f : 1000.0f);
       float duration = maneuver.time();
-      std::string drive_side("right"); // TODO - pass this through TPB or TripDirections
+      uint32_t idx = maneuver.begin_path_index();
+      std::string drive_side = (path_leg->node(idx).edge().drive_on_right()) ? "right" : "left";
 
       mode = get_mode(maneuver, path_leg);
       if (prev_mode.empty()) {
@@ -827,7 +841,7 @@ json::ArrayPtr serialize_legs(const std::list<valhalla::odin::TripDirections>& l
       // Add street names and refs. Names get added even if empty
       bool depart = (index == 0);
       bool arrive = (index == leg.maneuver().size() - 1);
-      auto nr = names_and_refs(maneuver, path_leg);
+      auto nr = names_and_refs(maneuver);
 
       // We dont have previous stuff yet so we just take what we have now
       if (depart) {
@@ -851,8 +865,8 @@ json::ArrayPtr serialize_legs(const std::list<valhalla::odin::TripDirections>& l
       prev_ref = nr.second;
 
       // Record street name and distance.. TODO - need to also worry about order
-      if (maneuver.street_name().size() > 0) {
-        const std::string& name = maneuver.street_name(0);
+      if (maneuver.street_name_size() > 0) {
+        const std::string& name = maneuver.street_name(0).value();
         auto man = maneuvers.find(name);
         if (man == maneuvers.end()) {
           maneuvers[name] = distance;
@@ -866,11 +880,12 @@ json::ArrayPtr serialize_legs(const std::list<valhalla::odin::TripDirections>& l
                                               depart, arrive, count, mode, prev_mode));
 
       // Add destinations and exits
-      std::string dest = destinations(maneuver);
+      const auto& sign = maneuver.sign();
+      std::string dest = destinations(sign);
       if (!dest.empty()) {
         step->emplace("destinations", dest);
       }
-      std::string ex = exits(maneuver);
+      std::string ex = exits(sign);
       if (!ex.empty()) {
         step->emplace("exits", ex);
       }
@@ -898,7 +913,7 @@ json::ArrayPtr serialize_legs(const std::list<valhalla::odin::TripDirections>& l
     // Get a summary based on longest maneuvers.
     std::string summary = "TODO"; // Form summary from longest maneuvers?
     float duration = leg.summary().time();
-    float distance = leg.summary().length() * 1000.0f;
+    float distance = leg.summary().length() * (imperial ? 1609.34f : 1000.0f);
     output_leg->emplace("summary", summary);
     output_leg->emplace("distance", json::fp_t{distance, 1});
     output_leg->emplace("duration", json::fp_t{duration, 1});
@@ -928,7 +943,7 @@ std::string serialize(const valhalla::odin::DirectionsOptions& directions_option
   json->emplace("code", status);
   switch (directions_options.action()) {
     case valhalla::odin::DirectionsOptions::trace_route:
-      json->emplace("tracepoints", osrm::waypoints(directions_options.shape(), true));
+      json->emplace("tracepoints", osrm::waypoints(directions_options.locations(), true));
       break;
     case valhalla::odin::DirectionsOptions::route:
       json->emplace("waypoints", osrm::waypoints(directions_options.locations()));
@@ -942,6 +957,9 @@ std::string serialize(const valhalla::odin::DirectionsOptions& directions_option
   // TODO - alternate routes (currently Valhalla only has 1 route)
   auto routes = json::array({});
 
+  // OSRM is always using metric for non narrative stuff
+  bool imperial = directions_options.units() == DirectionsOptions::miles;
+
   // For each route...
   for (int i = 0; i < 1; ++i) {
     // Create a route to add to the array
@@ -951,15 +969,15 @@ std::string serialize(const valhalla::odin::DirectionsOptions& directions_option
     route->emplace("geometry", full_shape(legs, directions_options));
 
     // Other route summary information
-    route_summary(route, legs);
+    route_summary(route, legs, imperial);
 
     // Serialize route legs
-    route->emplace("legs", serialize_legs(legs, path_legs));
+    route->emplace("legs", serialize_legs(legs, path_legs, imperial));
 
     routes->emplace_back(route);
   }
 
-  // Routes are called matchings in osrm
+  // Routes are called matchings in osrm map matching mode
   json->emplace(directions_options.action() == valhalla::odin::DirectionsOptions::trace_route
                     ? "matchings"
                     : "routes",
