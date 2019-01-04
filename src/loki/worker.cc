@@ -286,8 +286,12 @@ worker_t::result_t loki_worker_t::work(const std::list<zmq::message_t>& job,
       case odin::DirectionsOptions::transit_available:
         result = to_response_json(transit_available(request), info, request);
         break;
+      case odin::DirectionsOptions::edgeinfo:
+        result = to_response_json(edgeinfo(request), info, request);
+        break;
       default:
-        // apparently you wanted something that we figured we'd support but havent written yet
+        // apparently you wanted something that we figured we'd support but havent
+        // written yet
         return jsonify_error({107}, info, request);
     }
     // get processing time for loki

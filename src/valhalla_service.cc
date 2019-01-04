@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include "baldr/rapidjson_utils.h"
+#include "baldr/worker.h"
 #include <boost/property_tree/ptree.hpp>
 
 #include <prime_server/http_protocol.hpp>
@@ -42,6 +43,7 @@ int main(int argc, char** argv) {
   std::string loki_proxy = config.get<std::string>("loki.service.proxy");
   std::string thor_proxy = config.get<std::string>("thor.service.proxy");
   std::string odin_proxy = config.get<std::string>("odin.service.proxy");
+  std::string baldr_proxy = config.get<std::string>("baldr.service.proxy");
   // TODO: add multipoint accumulator worker
 
   // check the server endpoint
@@ -104,6 +106,16 @@ int main(int argc, char** argv) {
   for (size_t i = 0; i < worker_concurrency; ++i) {
     odin_worker_threads.emplace_back(valhalla::odin::run_service, config);
     odin_worker_threads.back().detach();
+  }
+
+  // baldr layer
+  std::thread baldr_proxy_thread(
+      std::bind(&proxy_t::forward, proxy_t(context, baldr_proxy + "_in", baldr_proxy + "_out")));
+  baldr_proxy_thread.detach();
+  std::list<std::thread> baldr_worker_threads;
+  for (size_t i = 0; i < worker_concurrency; ++i) {
+    baldr_worker_threads.emplace_back(valhalla::baldr::run_service, config);
+    baldr_worker_threads.back().detach();
   }
 
   // TODO: add multipoint accumulator

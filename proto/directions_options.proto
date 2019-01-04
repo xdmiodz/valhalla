@@ -120,6 +120,7 @@ message DirectionsOptions {
     trace_attributes = 10;
     height = 11;
     transit_available = 12;
+    edgeinfo = 13;
   }
 
   enum DateTimeType {

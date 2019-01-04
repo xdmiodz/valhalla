@@ -1,480 +1,637 @@
 #!/usr/bin/env python
 from __future__ import print_function
+
 import argparse
 import json
 import pprint
 
 #global default configuration
 config = {
-  'mjolnir': {
-    'max_cache_size': 1000000000,
-    'tile_url': None,
-    'tile_dir': '/data/valhalla',
-    'tile_extract': '/data/valhalla/tiles.tar',
-    'admin': '/data/valhalla/admin.sqlite',
-    'timezone': '/data/valhalla/tz_world.sqlite',
-    'transit_dir': '/data/valhalla/transit',
-    'transit_bounding_box': None,
-    'hierarchy': True,
-    'shortcuts': True,
-    'include_driveways': True,
-    'include_bicycle': True,
-    'include_pedestrian': True,
-    'include_driving': True,
-    'logging': {
-      'type': 'std_out',
-      'color': True,
-      'file_name': 'path_to_some_file.log'
+    'mjolnir': {
+        'max_cache_size': 1000000000,
+        'tile_url': None,
+        'tile_dir': '/data/valhalla',
+        'tile_extract': '/data/valhalla/tiles.tar',
+        'admin': '/data/valhalla/admin.sqlite',
+        'timezone': '/data/valhalla/tz_world.sqlite',
+        'transit_dir': '/data/valhalla/transit',
+        'transit_bounding_box': None,
+        'hierarchy': True,
+        'shortcuts': True,
+        'include_driveways': True,
+        'include_bicycle': True,
+        'include_pedestrian': True,
+        'include_driving': True,
+        'logging': {
+            'type': 'std_out',
+            'color': True,
+            'file_name': 'path_to_some_file.log'
+        }
+    },
+    'additional_data': {
+        'elevation': '/data/valhalla/elevation/'
+    },
+    'loki': {
+        'actions': [
+            'locate', 'route', 'height', 'sources_to_targets',
+            'optimized_route', 'isochrone', 'trace_route', 'trace_attributes',
+            'transit_available'
+        ],
+        'use_connectivity':
+        True,
+        'service_defaults': {
+            'radius': 0,
+            'minimum_reachability': 50
+        },
+        'logging': {
+            'type': 'std_out',
+            'color': True,
+            'file_name': 'path_to_some_file.log',
+            'long_request': 100.0
+        },
+        'service': {
+            'proxy': 'ipc:///tmp/loki'
+        }
+    },
+    'thor': {
+        'logging': {
+            'type': 'std_out',
+            'color': True,
+            'file_name': 'path_to_some_file.log',
+            'long_request': 110.0
+        },
+        'source_to_target_algorithm': 'select_optimal',
+        'service': {
+            'proxy': 'ipc:///tmp/thor'
+        }
+    },
+    'odin': {
+        'logging': {
+            'type': 'std_out',
+            'color': True,
+            'file_name': 'path_to_some_file.log'
+        },
+        'service': {
+            'proxy': 'ipc:///tmp/odin'
+        }
+    },
+    'baldr': {
+        'logging': {
+            'type': 'std_out',
+            'color': True,
+            'file_name': 'path_to_some_file.log'
+        },
+        'service': {
+            'proxy': 'ipc:///tmp/baldr'
+        }
+    },
+    'meili': {
+        'mode':
+        'auto',
+        'customizable': [
+            'mode', 'search_radius', 'turn_penalty_factor', 'gps_accuracy',
+            'sigma_z', 'beta', 'max_route_distance_factor',
+            'max_route_time_factor'
+        ],
+        'verbose':
+        False,
+        'default': {
+            'sigma_z': 4.07,
+            'gps_accuracy': 5.0,
+            'beta': 3,
+            'max_route_distance_factor': 5,
+            'max_route_time_factor': 5,
+            'max_search_radius': 100,
+            'breakage_distance': 2000,
+            'interpolation_distance': 10,
+            'search_radius': 50,
+            'geometry': False,
+            'route': True,
+            'turn_penalty_factor': 0
+        },
+        'auto': {
+            'turn_penalty_factor': 200,
+            'search_radius': 50
+        },
+        'pedestrian': {
+            'turn_penalty_factor': 100,
+            'search_radius': 50
+        },
+        'bicycle': {
+            'turn_penalty_factor': 140
+        },
+        'multimodal': {
+            'turn_penalty_factor': 70
+        },
+        'logging': {
+            'type': 'std_out',
+            'color': True,
+            'file_name': 'path_to_some_file.log'
+        },
+        'service': {
+            'proxy': 'ipc:///tmp/meili'
+        },
+        'grid': {
+            'size': 500,
+            'cache_size': 100240
+        }
+    },
+    'httpd': {
+        'service': {
+            'listen': 'tcp://*:8002',
+            'loopback': 'ipc:///tmp/loopback',
+            'interrupt': 'ipc:///tmp/interrupt'
+        }
+    },
+    'service_limits': {
+        'auto': {
+            'max_distance': 5000000.0,
+            'max_locations': 20,
+            'max_matrix_distance': 400000.0,
+            'max_matrix_locations': 50
+        },
+        'auto_shorter': {
+            'max_distance': 5000000.0,
+            'max_locations': 20,
+            'max_matrix_distance': 400000.0,
+            'max_matrix_locations': 50
+        },
+        'bus': {
+            'max_distance': 5000000.0,
+            'max_locations': 50,
+            'max_matrix_distance': 400000.0,
+            'max_matrix_locations': 50
+        },
+        'hov': {
+            'max_distance': 5000000.0,
+            'max_locations': 20,
+            'max_matrix_distance': 400000.0,
+            'max_matrix_locations': 50
+        },
+        'pedestrian': {
+            'max_distance': 250000.0,
+            'max_locations': 50,
+            'max_matrix_distance': 200000.0,
+            'max_matrix_locations': 50,
+            'min_transit_walking_distance': 1,
+            'max_transit_walking_distance': 10000
+        },
+        'motor_scooter': {
+            'max_distance': 500000.0,
+            'max_locations': 50,
+            'max_matrix_distance': 200000.0,
+            'max_matrix_locations': 50
+        },
+        'motorcycle': {
+            'max_distance': 500000.0,
+            'max_locations': 50,
+            'max_matrix_distance': 200000.0,
+            'max_matrix_locations': 50
+        },
+        'bicycle': {
+            'max_distance': 500000.0,
+            'max_locations': 50,
+            'max_matrix_distance': 200000.0,
+            'max_matrix_locations': 50
+        },
+        'multimodal': {
+            'max_distance': 500000.0,
+            'max_locations': 50,
+            'max_matrix_distance': 0.0,
+            'max_matrix_locations': 0
+        },
+        'transit': {
+            'max_distance': 500000.0,
+            'max_locations': 50,
+            'max_matrix_distance': 200000.0,
+            'max_matrix_locations': 50
+        },
+        'truck': {
+            'max_distance': 5000000.0,
+            'max_locations': 20,
+            'max_matrix_distance': 400000.0,
+            'max_matrix_locations': 50
+        },
+        'skadi': {
+            'max_shape': 750000,
+            'min_resample': 10.0
+        },
+        'isochrone': {
+            'max_contours': 4,
+            'max_time': 120,
+            'max_distance': 25000.0,
+            'max_locations': 1
+        },
+        'trace': {
+            'max_distance': 200000.0,
+            'max_gps_accuracy': 100.0,
+            'max_search_radius': 100.0,
+            'max_shape': 16000,
+            'max_best_paths': 4,
+            'max_best_paths_shape': 100
+        },
+        'max_avoid_locations': 50,
+        'max_reachability': 100,
+        'max_radius': 200,
+        'max_timedep_distance': 500000
     }
-  },
-  'additional_data': {
-    'elevation': '/data/valhalla/elevation/'
-  },
-  'loki': {
-    'actions':['locate','route','height','sources_to_targets','optimized_route','isochrone','trace_route','trace_attributes','transit_available'],
-    'use_connectivity': True,
-    'service_defaults': {
-      'radius': 0,
-      'minimum_reachability': 50
-    },
-    'logging': {
-      'type': 'std_out',
-      'color': True,
-      'file_name': 'path_to_some_file.log',
-      'long_request': 100.0
-    },
-    'service': {
-      'proxy': 'ipc:///tmp/loki'
-    }
-  },
-  'thor': {
-    'logging': {
-      'type': 'std_out',
-      'color': True,
-      'file_name': 'path_to_some_file.log',
-      'long_request': 110.0
-    },
-    'source_to_target_algorithm': 'select_optimal',
-    'service': {
-      'proxy': 'ipc:///tmp/thor'
-    }
-  },
-  'odin': {
-    'logging': {
-      'type': 'std_out',
-      'color': True,
-      'file_name': 'path_to_some_file.log'
-    },
-    'service': {
-      'proxy': 'ipc:///tmp/odin'
-    }
-  },
-  'meili': {
-    'mode': 'auto',
-    'customizable': ['mode', 'search_radius', 'turn_penalty_factor', 'gps_accuracy', 'sigma_z', 'beta', 'max_route_distance_factor', 'max_route_time_factor'],
-    'verbose': False,
-    'default': {
-      'sigma_z': 4.07,
-      'gps_accuracy': 5.0,
-      'beta': 3,
-      'max_route_distance_factor': 5,
-      'max_route_time_factor': 5,
-      'max_search_radius': 100,
-      'breakage_distance': 2000,
-      'interpolation_distance': 10,
-      'search_radius': 50,
-      'geometry': False,
-      'route': True,
-      'turn_penalty_factor': 0
-    },
-    'auto': {
-      'turn_penalty_factor': 200,
-      'search_radius': 50
-    },
-    'pedestrian': {
-      'turn_penalty_factor': 100,
-      'search_radius': 50
-    },
-    'bicycle': {
-      'turn_penalty_factor': 140
-    },
-    'multimodal': {
-      'turn_penalty_factor': 70
-    },
-    'logging': {
-      'type': 'std_out',
-      'color': True,
-      'file_name': 'path_to_some_file.log'
-    },
-    'service': {
-      'proxy': 'ipc:///tmp/meili'
-    },
-    'grid': {
-      'size': 500,
-      'cache_size': 100240
-    }
-  },
-  'httpd': {
-    'service': {
-      'listen': 'tcp://*:8002',
-      'loopback': 'ipc:///tmp/loopback',
-      'interrupt': 'ipc:///tmp/interrupt'
-    }
-  },
-  'service_limits': {
-    'auto': {
-      'max_distance': 5000000.0,
-      'max_locations': 20,
-      'max_matrix_distance': 400000.0,
-      'max_matrix_locations': 50
-    },
-    'auto_shorter': {
-      'max_distance': 5000000.0,
-      'max_locations': 20,
-      'max_matrix_distance': 400000.0,
-      'max_matrix_locations': 50
-    },
-    'bus': {
-      'max_distance': 5000000.0,
-      'max_locations': 50,
-      'max_matrix_distance': 400000.0,
-      'max_matrix_locations': 50
-    },
-    'hov': {
-      'max_distance': 5000000.0,
-      'max_locations': 20,
-      'max_matrix_distance': 400000.0,
-      'max_matrix_locations': 50
-    },
-    'pedestrian': {
-      'max_distance': 250000.0,
-      'max_locations': 50,
-      'max_matrix_distance': 200000.0,
-      'max_matrix_locations': 50,
-      'min_transit_walking_distance': 1,
-      'max_transit_walking_distance': 10000
-    },
-    'motor_scooter': {
-      'max_distance': 500000.0,
-      'max_locations': 50,
-      'max_matrix_distance': 200000.0,
-      'max_matrix_locations': 50
-    },
-    'motorcycle': {
-      'max_distance': 500000.0,
-      'max_locations': 50,
-      'max_matrix_distance': 200000.0,
-      'max_matrix_locations': 50
-    },
-    'bicycle': {
-      'max_distance': 500000.0,
-      'max_locations': 50,
-      'max_matrix_distance': 200000.0,
-      'max_matrix_locations': 50
-    },
-    'multimodal': {
-      'max_distance': 500000.0,
-      'max_locations': 50,
-      'max_matrix_distance': 0.0,
-      'max_matrix_locations': 0
-    },
-    'transit': {
-      'max_distance': 500000.0,
-      'max_locations': 50,
-      'max_matrix_distance': 200000.0,
-      'max_matrix_locations': 50
-    },
-    'truck': {
-      'max_distance': 5000000.0,
-      'max_locations': 20,
-      'max_matrix_distance': 400000.0,
-      'max_matrix_locations': 50
-    },
-    'skadi': {
-      'max_shape': 750000,
-      'min_resample': 10.0
-    },
-    'isochrone': {
-      'max_contours': 4,
-      'max_time': 120,
-      'max_distance': 25000.0,
-      'max_locations': 1
-    },
-    'trace': {
-      'max_distance': 200000.0,
-      'max_gps_accuracy': 100.0,
-      'max_search_radius': 100.0,
-      'max_shape': 16000,
-      'max_best_paths': 4,
-      'max_best_paths_shape': 100
-    },
-    'max_avoid_locations': 50,
-    'max_reachability': 100,
-    'max_radius': 200,
-    'max_timedep_distance': 500000
-  }
 }
 
 help_text = {
-  'mjolnir': {
-    'max_cache_size': 'Number of bytes per thread used to store tile data in memory',
-    'tile_url': 'Location to read tiles from if they are not found in the tile_dir',
-    'tile_dir': 'Location to read/write tiles to/from',
-    'tile_extract': 'Location to read tiles from tar',
-    'admin': 'Location of sqlite file holding admin polygons created with valhalla_build_admins',
-    'timezone': 'Location of sqlite file holding timezone information created with valhalla_build_timezones',
-    'transit_dir': 'Location of intermediate transit tiles created with valhalla_build_transit',
-    'transit_bounding_box': 'Add comma separated bounding box values to only download transit data inside the given bounding box',
-    'hierarchy': 'bool indicating whether road hierarchy is to be built - default to True',
-    'shortcuts': 'bool indicating whether shortcuts are to be built - default to True',
-    'include_driveways': 'bool indicating whether private driveways are included - default to True',
-    'include_bicycle': 'bool indicating whether cycling only ways are included - default to True',
-    'include_pedestrian': 'bool indicating whether pedestrian only ways are included - default to True',
-    'include_driving': 'bool indicating whether driving only ways are included - default to True',
-    'logging': {
-      'type': 'Type of logger either std_out or file',
-      'color': 'User colored log level in std_out logger',
-      'file_name': 'Output log file for the file logger'
+    'mjolnir': {
+        'max_cache_size':
+        'Number of bytes per thread used to store tile data in memory',
+        'tile_url':
+        'Location to read tiles from if they are not found in the tile_dir',
+        'tile_dir':
+        'Location to read/write tiles to/from',
+        'tile_extract':
+        'Location to read tiles from tar',
+        'admin':
+        'Location of sqlite file holding admin polygons created with valhalla_build_admins',
+        'timezone':
+        'Location of sqlite file holding timezone information created with valhalla_build_timezones',
+        'transit_dir':
+        'Location of intermediate transit tiles created with valhalla_build_transit',
+        'transit_bounding_box':
+        'Add comma separated bounding box values to only download transit data inside the given bounding box',
+        'hierarchy':
+        'bool indicating whether road hierarchy is to be built - default to True',
+        'shortcuts':
+        'bool indicating whether shortcuts are to be built - default to True',
+        'include_driveways':
+        'bool indicating whether private driveways are included - default to True',
+        'include_bicycle':
+        'bool indicating whether cycling only ways are included - default to True',
+        'include_pedestrian':
+        'bool indicating whether pedestrian only ways are included - default to True',
+        'include_driving':
+        'bool indicating whether driving only ways are included - default to True',
+        'logging': {
+            'type': 'Type of logger either std_out or file',
+            'color': 'User colored log level in std_out logger',
+            'file_name': 'Output log file for the file logger'
+        }
+    },
+    'additional_data': {
+        'elevation':
+        'Location of srtmgl1 elevation tiles for using in valhalla_build_tiles'
+    },
+    'loki': {
+        'actions':
+        'Comma separated list of allowable actions for the service, one or more of: locate, route, height, optimized_route, isochrone, trace_route, trace_attributes, transit_available',
+        'use_connectivity':
+        'a boolean value to know whether or not to construct the connectivity maps',
+        'service_defaults': {
+            'radius':
+            'Default radius to apply to incoming locations should one not be supplied',
+            'minimum_reachability':
+            'Default minimum reachability to apply to incoming locations should one not be supplied',
+        },
+        'logging': {
+            'type':
+            'Type of logger either std_out or file',
+            'color':
+            'User colored log level in std_out logger',
+            'file_name':
+            'Output log file for the file logger',
+            'long_request':
+            'Value used in processing to determine whether it took too long'
+        },
+        'service': {
+            'proxy': 'IPC linux domain socket file location'
+        }
+    },
+    'thor': {
+        'logging': {
+            'type':
+            'Type of logger either std_out or file',
+            'color':
+            'User colored log level in std_out logger',
+            'file_name':
+            'Output log file for the file logger',
+            'long_request':
+            'Value used in processing to determine whether it took too long'
+        },
+        'source_to_target_algorithm':
+        'TODO: which matrix algorithm should be used',
+        'service': {
+            'proxy': 'IPC linux domain socket file location'
+        }
+    },
+    'odin': {
+        'logging': {
+            'type': 'Type of logger either std_out or file',
+            'color': 'User colored log level in std_out logger',
+            'file_name': 'Output log file for the file logger'
+        },
+        'service': {
+            'proxy': 'IPC linux domain socket file location'
+        }
+    },
+    'baldr': {
+        'logging': {
+            'type': 'Type of logger either std_out or file',
+            'color': 'User colored log level in std_out logger',
+            'file_name': 'Output log file for the file logger'
+        },
+        'service': {
+            'proxy': 'IPC linux domain socket file location'
+        }
+    },
+    'meili': {
+        'mode':
+        'Specify the default transport mode',
+        'customizable':
+        'Specify which parameters are allowed to be customized by URL query parameters',
+        'verbose':
+        'Control verbose output for debugging',
+        'default': {
+            'sigma_z':
+            'A non-negative value to specify the GPS accuracy (the variance of the normal distribution) of an incoming GPS sequence. It is also used to weight emission costs of measurements',
+            'gps_accuracy':
+            'TODO: ',
+            'beta':
+            'A non-negative emprical value to weight the transition cost of two successive candidates',
+            'max_route_distance_factor':
+            'A non-negative value used to limit the routing search range which is the distance to next measurement multiplied by this factor',
+            'max_route_time_factor':
+            'A non-negative value used to limit the routing search range which is the time to the next measurement multiplied by this factor',
+            'breakage_distance':
+            'A non-negative value. If two successive measurements are far than this distance, then connectivity in between will not be considered',
+            'max_search_radius':
+            'A non-negative value specifying the maximum radius in meters about a given point to search for candidate edges for routing',
+            'interpolation_distance':
+            'If two successive measurements are closer than this distance, then the later one will be interpolated into the matched route',
+            'search_radius':
+            'A non-negative value to specify the search radius (in meters) within which to search road candidates for each measurement',
+            'geometry':
+            'TODO: ',
+            'route':
+            'TODO: ',
+            'turn_penalty_factor':
+            'A non-negative value to penalize turns from one road segment to next'
+        },
+        'auto': {
+            'turn_penalty_factor':
+            'A non-negative value to penalize turns from one road segment to next',
+            'search_radius':
+            'A non-negative value to specify the search radius (in meters) within which to search road candidates for each measurement'
+        },
+        'pedestrian': {
+            'turn_penalty_factor':
+            'A non-negative value to penalize turns from one road segment to next',
+            'search_radius':
+            'A non-negative value to specify the search radius (in meters) within which to search road candidates for each measurement'
+        },
+        'bicycle': {
+            'turn_penalty_factor':
+            'A non-negative value to penalize turns from one road segment to next'
+        },
+        'multimodal': {
+            'turn_penalty_factor':
+            'A non-negative value to penalize turns from one road segment to next'
+        },
+        'logging': {
+            'type': 'Type of logger either std_out or file',
+            'color': 'User colored log level in std_out logger',
+            'file_name': 'Output log file for the file logger'
+        },
+        'service': {
+            'proxy': 'IPC linux domain socket file location'
+        },
+        'grid': {
+            'size':
+            'TODO: Resolution of the grid used in finding match candidates',
+            'cache_size':
+            'TODO: number of grids to keep in cache'
+        }
+    },
+    'httpd': {
+        'service': {
+            'listen':
+            'The protocol, host location and port your service will bind to',
+            'loopback':
+            'IPC linux domain socket file location used to communicate results back to the client',
+            'interrupt':
+            'IPC linux domain socket file location used to cancel work in progress'
+        }
+    },
+    'service_limits': {
+        'auto': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'auto_shorter': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'bus': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'hov': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'pedestrian': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix',
+            'min_transit_walking_distance':
+            'TODO: minimum distance you must walk to a station',
+            'max_transit_walking_distance':
+            'Maximum distance allowed for walking when using transit'
+        },
+        'motor_scooter': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'motorcycle': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'bicycle': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'multimodal': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'transit': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'truck': {
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations',
+            'max_matrix_distance':
+            'Maximum b-line distance between 2 most distant locations in meters for a matrix',
+            'max_matrix_locations':
+            'Maximum number of input locations for a matrix'
+        },
+        'skadi': {
+            'max_shape': 'Maximum number of input shapes',
+            'min_resample': 'Smalled resampling distance to allow in meters'
+        },
+        'isochrone': {
+            'max_contours':
+            'Maximum number of input contours to allow',
+            'max_time':
+            'Maximum time value for any one contour',
+            'max_distance':
+            'Maximum b-line distance between all locations in meters',
+            'max_locations':
+            'Maximum number of input locations'
+        },
+        'trace': {
+            'max_distance':
+            'Maximum input shape distance in meters',
+            'max_gps_accuracy':
+            'Maximum input gps accuracy in meters',
+            'max_search_radius':
+            'Maximum upper bounds of the search radius in meters',
+            'max_shape':
+            'Maximum number of input shape points',
+            'max_best_paths':
+            'Maximum number of best paths',
+            'max_best_paths_shape':
+            'Maximum number of input shape points when requesting multiple paths'
+        },
+        'max_avoid_locations':
+        'Maximum number of avoid locations to allow in request',
+        'max_reachability':
+        'Maximum reachability (number of nodes reachable) allowed on any one location',
+        'max_radius':
+        'Maximum radius in meters allowed on any one location',
+        'max_timedep_distance':
+        'Maximum b-line distance between locations to allow a time-dependent route'
     }
-  },
-  'additional_data': {
-    'elevation': 'Location of srtmgl1 elevation tiles for using in valhalla_build_tiles'
-  },
-  'loki': {
-    'actions': 'Comma separated list of allowable actions for the service, one or more of: locate, route, height, optimized_route, isochrone, trace_route, trace_attributes, transit_available',
-    'use_connectivity': 'a boolean value to know whether or not to construct the connectivity maps',
-    'service_defaults': {
-      'radius': 'Default radius to apply to incoming locations should one not be supplied',
-      'minimum_reachability': 'Default minimum reachability to apply to incoming locations should one not be supplied',
-    },
-    'logging': {
-      'type': 'Type of logger either std_out or file',
-      'color': 'User colored log level in std_out logger',
-      'file_name': 'Output log file for the file logger',
-      'long_request': 'Value used in processing to determine whether it took too long'
-    },
-    'service': {
-      'proxy': 'IPC linux domain socket file location'
-    }
-  },
-  'thor': {
-    'logging': {
-      'type': 'Type of logger either std_out or file',
-      'color': 'User colored log level in std_out logger',
-      'file_name': 'Output log file for the file logger',
-      'long_request': 'Value used in processing to determine whether it took too long'
-    },
-    'source_to_target_algorithm': 'TODO: which matrix algorithm should be used',
-    'service': {
-      'proxy': 'IPC linux domain socket file location'
-    }
-  },
-  'odin': {
-    'logging': {
-      'type': 'Type of logger either std_out or file',
-      'color': 'User colored log level in std_out logger',
-      'file_name': 'Output log file for the file logger'
-    },
-    'service': {
-      'proxy': 'IPC linux domain socket file location'
-    }
-  },
-  'meili': {
-    'mode': 'Specify the default transport mode',
-    'customizable': 'Specify which parameters are allowed to be customized by URL query parameters',
-    'verbose': 'Control verbose output for debugging',
-    'default': {
-      'sigma_z': 'A non-negative value to specify the GPS accuracy (the variance of the normal distribution) of an incoming GPS sequence. It is also used to weight emission costs of measurements',
-      'gps_accuracy': 'TODO: ',
-      'beta': 'A non-negative emprical value to weight the transition cost of two successive candidates',
-      'max_route_distance_factor': 'A non-negative value used to limit the routing search range which is the distance to next measurement multiplied by this factor',
-      'max_route_time_factor': 'A non-negative value used to limit the routing search range which is the time to the next measurement multiplied by this factor',
-      'breakage_distance': 'A non-negative value. If two successive measurements are far than this distance, then connectivity in between will not be considered',
-      'max_search_radius': 'A non-negative value specifying the maximum radius in meters about a given point to search for candidate edges for routing',
-      'interpolation_distance': 'If two successive measurements are closer than this distance, then the later one will be interpolated into the matched route',
-      'search_radius': 'A non-negative value to specify the search radius (in meters) within which to search road candidates for each measurement',
-      'geometry': 'TODO: ',
-      'route': 'TODO: ',
-      'turn_penalty_factor': 'A non-negative value to penalize turns from one road segment to next'
-    },
-    'auto': {
-      'turn_penalty_factor': 'A non-negative value to penalize turns from one road segment to next',
-      'search_radius': 'A non-negative value to specify the search radius (in meters) within which to search road candidates for each measurement'
-    },
-    'pedestrian': {
-      'turn_penalty_factor': 'A non-negative value to penalize turns from one road segment to next',
-      'search_radius': 'A non-negative value to specify the search radius (in meters) within which to search road candidates for each measurement'
-    },
-    'bicycle': {
-      'turn_penalty_factor': 'A non-negative value to penalize turns from one road segment to next'
-    },
-    'multimodal': {
-      'turn_penalty_factor': 'A non-negative value to penalize turns from one road segment to next'
-    },
-    'logging': {
-      'type': 'Type of logger either std_out or file',
-      'color': 'User colored log level in std_out logger',
-      'file_name': 'Output log file for the file logger'
-    },
-    'service': {
-      'proxy': 'IPC linux domain socket file location'
-    },
-    'grid': {
-      'size': 'TODO: Resolution of the grid used in finding match candidates',
-      'cache_size': 'TODO: number of grids to keep in cache'
-    }
-  },
-  'httpd': {
-    'service': {
-      'listen': 'The protocol, host location and port your service will bind to',
-      'loopback': 'IPC linux domain socket file location used to communicate results back to the client',
-      'interrupt': 'IPC linux domain socket file location used to cancel work in progress'
-    }
-  },
-  'service_limits': {
-    'auto': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'auto_shorter': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'bus': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'hov': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'pedestrian': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix',
-      'min_transit_walking_distance': 'TODO: minimum distance you must walk to a station',
-      'max_transit_walking_distance': 'Maximum distance allowed for walking when using transit'
-    },
-    'motor_scooter': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'motorcycle': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'bicycle': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'multimodal': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'transit': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'truck': {
-      'max_distance': 'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations',
-      'max_matrix_distance': 'Maximum b-line distance between 2 most distant locations in meters for a matrix',
-      'max_matrix_locations': 'Maximum number of input locations for a matrix'
-    },
-    'skadi': {
-      'max_shape': 'Maximum number of input shapes',
-      'min_resample': 'Smalled resampling distance to allow in meters'
-    },
-    'isochrone': {
-      'max_contours': 'Maximum number of input contours to allow',
-      'max_time': 'Maximum time value for any one contour',
-      'max_distance':'Maximum b-line distance between all locations in meters',
-      'max_locations': 'Maximum number of input locations'
-    },
-    'trace': {
-      'max_distance': 'Maximum input shape distance in meters',
-      'max_gps_accuracy': 'Maximum input gps accuracy in meters',
-      'max_search_radius': 'Maximum upper bounds of the search radius in meters',
-      'max_shape': 'Maximum number of input shape points',
-      'max_best_paths': 'Maximum number of best paths',
-      'max_best_paths_shape': 'Maximum number of input shape points when requesting multiple paths'
-    },
-    'max_avoid_locations': 'Maximum number of avoid locations to allow in request',
-    'max_reachability': 'Maximum reachability (number of nodes reachable) allowed on any one location',
-    'max_radius': 'Maximum radius in meters allowed on any one location',
-    'max_timedep_distance': 'Maximum b-line distance between locations to allow a time-dependent route'
-  }
 }
+
 
 #used to convert comma separated list of strings into a list
 def comma_separated_list(arg):
-  return arg.split(',')
+    return arg.split(',')
+
 
 def parse_bool(arg):
-  if arg.lower() in ('yes', 'true', 't', 'y', '1'):
-    return True
-  elif arg.lower() in ('no', 'false', 'f', 'n', '0'):
-    return False
-  else:
-    raise argparse.ArgumentTypeError('Boolean value expected.')
+    if arg.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif arg.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 
 #returns a list of leaves of the tree, `\0` separated, stops at non dicts
 #while doing so it also adds arguments to the parser
 def add_leaf_args(path, tree, leaves, parser):
-  #if we are at a dict go deeper
-  if isinstance(tree, dict):
-    for k in tree:
-      v = tree[k]
-      add_leaf_args('\0'.join([path, k]) if len(path) else k, v, leaves, parser)
-  #we've reached a leaf
-  else:
-    keys = path.split('\0')
-    h = help_text
-    for k in keys:
-      h = h[k]
-    t = comma_separated_list if type(tree) == type([]) else type(tree)
-    arg = '--' + path.replace('_', '-').replace('\0', '-')
-    parser.add_argument(arg, type = t if t != type(False) else parse_bool, help=h, default=tree)
-    leaves.append(path)
+    #if we are at a dict go deeper
+    if isinstance(tree, dict):
+        for k in tree:
+            v = tree[k]
+            add_leaf_args('\0'.join([path, k]) if len(path) else k, v, leaves,
+                          parser)
+    #we've reached a leaf
+    else:
+        keys = path.split('\0')
+        h = help_text
+        for k in keys:
+            h = h[k]
+        t = comma_separated_list if type(tree) == type([]) else type(tree)
+        arg = '--' + path.replace('_', '-').replace('\0', '-')
+        parser.add_argument(
+            arg,
+            type=t if t != type(False) else parse_bool,
+            help=h,
+            default=tree)
+        leaves.append(path)
+
 
 #entry point to program
 if __name__ == '__main__':
 
-  #set up program options
-  leaves = []
-  parser = argparse.ArgumentParser(description='Generate valhalla configuration', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-  add_leaf_args('', config, leaves, parser)
-  #TODO: add argument to set base path and use in all other path based values
-  args = parser.parse_args()
+    #set up program options
+    leaves = []
+    parser = argparse.ArgumentParser(
+        description='Generate valhalla configuration',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    add_leaf_args('', config, leaves, parser)
+    #TODO: add argument to set base path and use in all other path based values
+    args = parser.parse_args()
 
-  #override the defaults given what was passed
-  for leaf in leaves:
-    keys = leaf.split('\0')
-    v = config
-    for k in keys[:-1]:
-      v = v[k]
-    v[keys[-1]] = getattr(args, leaf.replace('\0', '_'))
-    if v[keys[-1]] is None:
-      del v[keys[-1]]
+    #override the defaults given what was passed
+    for leaf in leaves:
+        keys = leaf.split('\0')
+        v = config
+        for k in keys[:-1]:
+            v = v[k]
+        v[keys[-1]] = getattr(args, leaf.replace('\0', '_'))
+        if v[keys[-1]] is None:
+            del v[keys[-1]]
 
-  #show the config
-  print(json.dumps(config, sort_keys=True, indent=2, separators=(',', ': ')))
+    #show the config
+    print(json.dumps(config, sort_keys=True, indent=2, separators=(',', ': ')))

@@ -44,6 +44,7 @@ public:
   void trace(valhalla_request_t& request);
   std::string height(valhalla_request_t& request);
   std::string transit_available(valhalla_request_t& request);
+  std::string edgeinfo(valhalla_request_t& request);
 
 protected:
   void parse_locations(

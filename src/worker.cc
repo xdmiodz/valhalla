@@ -762,6 +762,7 @@ bool DirectionsOptions_Action_Parse(const std::string& action, odin::DirectionsO
       {"trace_attributes", odin::DirectionsOptions::trace_attributes},
       {"height", odin::DirectionsOptions::height},
       {"transit_available", odin::DirectionsOptions::transit_available},
+      {"edgeinfo", odin::DirectionsOptions::edgeinfo},
   };
   auto i = actions.find(action);
   if (i == actions.cend())
@@ -782,6 +783,7 @@ const std::string& DirectionsOptions_Action_Name(const odin::DirectionsOptions::
       {odin::DirectionsOptions::trace_attributes, "trace_attributes"},
       {odin::DirectionsOptions::height, "height"},
       {odin::DirectionsOptions::transit_available, "transit_available"},
+      {odin::DirectionsOptions::edgeinfo, "edgeinfo"},
   };
   auto i = actions.find(action);
   return i == actions.cend() ? empty : i->second;
