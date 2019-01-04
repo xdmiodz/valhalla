@@ -106,5 +106,6 @@ valhalla_module(NAME baldr
   DEPENDS
     valhalla::proto
     valhalla::midgard
+    libprime_server
     CURL::CURL
     ZLIB::ZLIB)

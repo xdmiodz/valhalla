@@ -22,44 +22,46 @@ namespace valhalla {
 namespace loki {
 
 #ifdef HAVE_HTTP
-void run_service(const boost::property_tree::ptree& config);
+void run_service(const boost::property_tree::ptree &config);
 #endif
 
 class loki_worker_t : public service_worker_t {
 public:
-  loki_worker_t(const boost::property_tree::ptree& config,
-                const std::shared_ptr<baldr::GraphReader>& graph_reader = {});
+  loki_worker_t(const boost::property_tree::ptree &config,
+                const std::shared_ptr<baldr::GraphReader> &graph_reader = {});
 #ifdef HAVE_HTTP
-  virtual worker_t::result_t work(const std::list<zmq::message_t>& job,
-                                  void* request_info,
-                                  const std::function<void()>& interrupt) override;
-  void limits(valhalla_request_t& request) const;
+  virtual worker_t::result_t
+  work(const std::list<zmq::message_t> &job, void *request_info,
+       const std::function<void()> &interrupt) override;
+  void limits(valhalla_request_t &request) const;
 #endif
   virtual void cleanup() override;
 
-  std::string locate(valhalla_request_t& request);
-  void route(valhalla_request_t& request);
-  void matrix(valhalla_request_t& request);
-  void isochrones(valhalla_request_t& request);
-  void trace(valhalla_request_t& request);
-  std::string height(valhalla_request_t& request);
-  std::string transit_available(valhalla_request_t& request);
+  std::string locate(valhalla_request_t &request);
+  void route(valhalla_request_t &request);
+  void matrix(valhalla_request_t &request);
+  void isochrones(valhalla_request_t &request);
+  void trace(valhalla_request_t &request);
+  std::string height(valhalla_request_t &request);
+  std::string transit_available(valhalla_request_t &request);
+  std::string edgeinfo(valhalla_request_t &request);
 
 protected:
-  void parse_locations(
-      google::protobuf::RepeatedPtrField<odin::Location>* locations,
-      boost::optional<valhalla_exception_t> required_exception = valhalla_exception_t{110});
-  void parse_trace(valhalla_request_t& request);
-  void parse_costing(valhalla_request_t& request);
-  void locations_from_shape(valhalla_request_t& request);
+  void
+  parse_locations(google::protobuf::RepeatedPtrField<odin::Location> *locations,
+                  boost::optional<valhalla_exception_t> required_exception =
+                      valhalla_exception_t{110});
+  void parse_trace(valhalla_request_t &request);
+  void parse_costing(valhalla_request_t &request);
+  void locations_from_shape(valhalla_request_t &request);
 
-  void init_locate(valhalla_request_t& request);
-  void init_route(valhalla_request_t& request);
-  void init_matrix(valhalla_request_t& request);
-  void init_isochrones(valhalla_request_t& request);
-  void init_trace(valhalla_request_t& request);
-  std::vector<PointLL> init_height(valhalla_request_t& request);
-  void init_transit_available(valhalla_request_t& request);
+  void init_locate(valhalla_request_t &request);
+  void init_route(valhalla_request_t &request);
+  void init_matrix(valhalla_request_t &request);
+  void init_isochrones(valhalla_request_t &request);
+  void init_trace(valhalla_request_t &request);
+  std::vector<PointLL> init_height(valhalla_request_t &request);
+  void init_transit_available(valhalla_request_t &request);
 
   boost::property_tree::ptree config;
   sif::CostFactory<sif::DynamicCost> factory;

@@ -329,6 +329,16 @@ help_text = {
             'proxy': 'IPC linux domain socket file location'
         }
     },
+    'baldr': {
+        'logging': {
+            'type': 'Type of logger either std_out or file',
+            'color': 'User colored log level in std_out logger',
+            'file_name': 'Output log file for the file logger'
+        },
+        'service': {
+            'proxy': 'IPC linux domain socket file location'
+        }
+    },
     'meili': {
         'mode':
         'Specify the default transport mode',

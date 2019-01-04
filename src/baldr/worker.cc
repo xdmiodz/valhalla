@@ -13,7 +13,40 @@ baldr_worker_t::baldr_worker_t(
     reader.reset(new GraphReader(config.get_child("mjolnir")));
 }
 
+baldr_worker_t::~baldr_worker_t() {}
+
+void baldr_worker_t::cleanup() {}
+
+EdgeInfo
+baldr_worker_t::edgeinfo(const valhalla_request_t valhalla_request) const {
+  return reader->edgeinfo(GraphId(10));
+}
+
 #ifdef HAVE_HTTP
+worker_t::result_t
+baldr_worker_t::work(const std::list<zmq::message_t> &job, void *request_info,
+                     const std::function<void()> &interrupt_function) {
+  auto &info = *static_cast<http_request_info_t *>(request_info);
+  LOG_INFO("Got Baldr Request " + std::to_string(info.id));
+  valhalla_request_t request;
+  try {
+    // crack open the original request
+    std::string request_str(static_cast<const char *>(job.front().data()),
+                            job.front().size());
+    std::string serialized_options(
+        static_cast<const char *>((++job.cbegin())->data()),
+        (++job.cbegin())->size());
+    request.parse(request_str, serialized_options);
+
+    // Set the interrupt function
+    service_worker_t::set_interrupt(interrupt_function);
+  } catch (const std::exception &e) {
+    return jsonify_error({299, std::string(e.what())}, info, request);
+  }
+
+  auto edge_id = request.document["edge_id"].GetInt();
+}
+
 void run_service(const boost::property_tree::ptree &config) {
   // gets requests from baldr proxy
   auto upstream_endpoint =

@@ -10,6 +10,7 @@
 #include <unordered_set>
 
 #include "baldr/rapidjson_utils.h"
+#include "baldr/worker.h"
 #include <boost/property_tree/ptree.hpp>
 
 #include <prime_server/http_protocol.hpp>
@@ -22,10 +23,11 @@ using namespace prime_server;
 #include "odin/worker.h"
 #include "thor/worker.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 
   if (argc < 2) {
-    LOG_ERROR("Usage: " + std::string(argv[0]) + " config/file.json [concurrency]");
+    LOG_ERROR("Usage: " + std::string(argv[0]) +
+              " config/file.json [concurrency]");
     return 1;
   }
 
@@ -42,25 +44,29 @@ int main(int argc, char** argv) {
   std::string loki_proxy = config.get<std::string>("loki.service.proxy");
   std::string thor_proxy = config.get<std::string>("thor.service.proxy");
   std::string odin_proxy = config.get<std::string>("odin.service.proxy");
+  std::string baldr_proxy = config.get<std::string>("baldr.service.proxy");
   // TODO: add multipoint accumulator worker
 
   // check the server endpoint
   if (listen.find("tcp://") != 0) {
     if (listen.find("icp://") != 0) {
-      LOG_ERROR("You must listen on either tcp://ip:port or ipc://some_socket_file");
+      LOG_ERROR(
+          "You must listen on either tcp://ip:port or ipc://some_socket_file");
       return EXIT_FAILURE;
     } else {
-      LOG_WARN("Listening on a domain socket limits the server to local requests");
+      LOG_WARN(
+          "Listening on a domain socket limits the server to local requests");
     }
   }
 
   // configure logging
-  boost::optional<boost::property_tree::ptree&> logging_subtree =
+  boost::optional<boost::property_tree::ptree &> logging_subtree =
       config.get_child_optional("tyr.logging");
   if (logging_subtree) {
     auto logging_config =
-        valhalla::midgard::ToMap<const boost::property_tree::ptree&,
-                                 std::unordered_map<std::string, std::string>>(logging_subtree.get());
+        valhalla::midgard::ToMap<const boost::property_tree::ptree &,
+                                 std::unordered_map<std::string, std::string>>(
+            logging_subtree.get());
     valhalla::midgard::logging::Configure(logging_config);
   }
 
@@ -72,13 +78,14 @@ int main(int argc, char** argv) {
 
   // setup the cluster within this process
   zmq::context_t context;
-  std::thread server_thread =
-      std::thread(std::bind(&http_server_t::serve, http_server_t(context, listen, loki_proxy + "_in",
-                                                                 loopback, interrupt, true)));
+  std::thread server_thread = std::thread(std::bind(
+      &http_server_t::serve, http_server_t(context, listen, loki_proxy + "_in",
+                                           loopback, interrupt, true)));
 
   // loki layer
   std::thread loki_proxy_thread(
-      std::bind(&proxy_t::forward, proxy_t(context, loki_proxy + "_in", loki_proxy + "_out")));
+      std::bind(&proxy_t::forward,
+                proxy_t(context, loki_proxy + "_in", loki_proxy + "_out")));
   loki_proxy_thread.detach();
   std::list<std::thread> loki_worker_threads;
   for (size_t i = 0; i < worker_concurrency; ++i) {
@@ -88,7 +95,8 @@ int main(int argc, char** argv) {
 
   // thor layer
   std::thread thor_proxy_thread(
-      std::bind(&proxy_t::forward, proxy_t(context, thor_proxy + "_in", thor_proxy + "_out")));
+      std::bind(&proxy_t::forward,
+                proxy_t(context, thor_proxy + "_in", thor_proxy + "_out")));
   thor_proxy_thread.detach();
   std::list<std::thread> thor_worker_threads;
   for (size_t i = 0; i < worker_concurrency; ++i) {
@@ -98,12 +106,24 @@ int main(int argc, char** argv) {
 
   // odin layer
   std::thread odin_proxy_thread(
-      std::bind(&proxy_t::forward, proxy_t(context, odin_proxy + "_in", odin_proxy + "_out")));
+      std::bind(&proxy_t::forward,
+                proxy_t(context, odin_proxy + "_in", odin_proxy + "_out")));
   odin_proxy_thread.detach();
   std::list<std::thread> odin_worker_threads;
   for (size_t i = 0; i < worker_concurrency; ++i) {
     odin_worker_threads.emplace_back(valhalla::odin::run_service, config);
     odin_worker_threads.back().detach();
+  }
+
+  // baldr layer
+  std::thread baldr_proxy_thread(
+      std::bind(&proxy_t::forward,
+                proxy_t(context, baldr_proxy + "_in", baldr_proxy + "_out")));
+  baldr_proxy_thread.detach();
+  std::list<std::thread> baldr_worker_threads;
+  for (size_t i = 0; i < worker_concurrency; ++i) {
+    baldr_worker_threads.emplace_back(valhalla::baldr::run_service, config);
+    baldr_worker_threads.back().detach();
   }
 
   // TODO: add multipoint accumulator
