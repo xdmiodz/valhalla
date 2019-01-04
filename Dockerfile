@@ -2,7 +2,6 @@ FROM ubuntu:xenial
 
 RUN mkdir -p /code/valhalla/build /code /valhalla
 COPY . /code/valhalla
-COPY ./run.sh /valhalla/run.sh
 
 RUN  apt-get update && \
     apt-get install -y \
