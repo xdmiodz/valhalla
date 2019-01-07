@@ -1494,6 +1494,10 @@ TripPath_Edge* TripPathBuilder::AddTripEdge(const AttributesController& controll
     trip_edge->set_id(edge.value);
   }
 
+  if (controller.attributes.at(kEdgeShape)) {
+    trip_edge->set_shape(midgard::encode(edgeinfo.shape()));
+  }
+
   // Set way id (base data id) if requested
   if (controller.attributes.at(kEdgeWayId)) {
     trip_edge->set_way_id(edgeinfo.wayid());
@@ -1579,7 +1583,6 @@ TripPath_Edge* TripPathBuilder::AddTripEdge(const AttributesController& controll
   /////////////////////////////////////////////////////////////////////////////
   // Process transit information
   if (trip_id && (directededge->use() == Use::kRail || directededge->use() == Use::kBus)) {
-
     TripPath_TransitRouteInfo* transit_route_info = trip_edge->mutable_transit_route_info();
 
     // Set block_id if requested
