@@ -191,6 +191,10 @@ json::ArrayPtr serialize_edges(const AttributesController& controller,
         edge_map->emplace("shape", edge.shape());
       }
 
+      if (edge.has_forward()) {
+        edge_map->emplace("forward", edge.forward());
+      }
+
       // TODO: do we want to output 'is_route_number'?
       if (edge.name_size() > 0) {
         auto names_array = json::array({});
