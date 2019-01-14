@@ -14,12 +14,9 @@ namespace loki {
 
 std::string loki_worker_t::edgeinfo(valhalla_request_t& request) {
   auto id = rapidjson::get_optional<uint64_t>(request.document, "/graphid").get();
-  auto directededge = reader->directededge(GraphId(id));
   auto edgeinfo = reader->edgeinfo(GraphId(id));
-  auto json_map = json::map({
-      {"direction", directededge->forward()},
-      {"shape", midgard::encode(edgeinfo.shape())},
-  });
+  auto json_map = json::map({{"shape", midgard::encode(edgeinfo.shape())},
+                             {"way_id", static_cast<uint64_t>(edgeinfo.wayid())}});
   std::stringstream ss;
   ss << *json_map;
   return ss.str();

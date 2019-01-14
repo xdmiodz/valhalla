@@ -62,7 +62,6 @@ const std::unordered_map<std::string, bool> AttributesController::kRouteAttribut
     {kEdgeTruckSpeed, true},
     {kEdgeTruckRoute, true},
     {kEdgeShape, true},
-    {kEdgeForward, true},
 
     // Node keys
     {kNodeIntersectingEdgeBeginHeading, true},

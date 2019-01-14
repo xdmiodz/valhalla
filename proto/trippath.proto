@@ -214,7 +214,6 @@ message TripPath {
     optional int32 mean_elevation = 40;
     repeated TrafficSegment traffic_segment = 41;
     optional string shape = 42;
-    optional bool forward = 43;
   }
 
   message IntersectingEdge {
