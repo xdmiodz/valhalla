@@ -1498,6 +1498,10 @@ TripPath_Edge* TripPathBuilder::AddTripEdge(const AttributesController& controll
     trip_edge->set_shape(midgard::encode(edgeinfo.shape()));
   }
 
+  if (controller.attributes.at(kEdgeForward)) {
+    trip_edge->set_forward(directededge->forward());
+  }
+
   // Set way id (base data id) if requested
   if (controller.attributes.at(kEdgeWayId)) {
     trip_edge->set_way_id(edgeinfo.wayid());
