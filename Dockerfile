@@ -28,13 +28,15 @@ RUN  apt-get update && \
     libzmq3-dev \
     libczmq-dev \
     python \
+    python-pip \
     wget \
     ccache && \
+    pip install awscli && \
     cd /code && git clone https://github.com/kevinkreiser/prime_server.git && \
     cd prime_server && git submodule update --init --recursive && \
-    ./autogen.sh && ./configure && make install && \
+    ./autogen.sh && ./configure && make -j4 install && \
     cd /code/valhalla/build && cmake  -DENABLE_NODE_BINDINGS=Off .. && \
-    make all install && \
+    make -j4 install && \
     apt-get remove -y cmake \
     make libtool g++ gcc lcov \
     git-core \
