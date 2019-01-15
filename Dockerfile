@@ -34,9 +34,9 @@ RUN  apt-get update && \
     pip install awscli && \
     cd /code && git clone https://github.com/kevinkreiser/prime_server.git && \
     cd prime_server && git submodule update --init --recursive && \
-    ./autogen.sh && ./configure && make -j4 install && \
+    ./autogen.sh && ./configure && make install && \
     cd /code/valhalla/build && cmake  -DENABLE_NODE_BINDINGS=Off .. && \
-    make -j4 install && \
+    make install && \
     apt-get remove -y cmake \
     make libtool g++ gcc lcov \
     git-core \
