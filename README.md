@@ -23,9 +23,9 @@ Valhalla is an open source routing engine and accompanying libraries for use wit
 Build Status
 ------------
 
-| Linux | Code Coverage |
-| ----- | ------------- |
-| [![Circle CI](https://circleci.com/gh/valhalla/valhalla.svg?style=svg)](https://circleci.com/gh/valhalla/valhalla) | [![codecov](https://codecov.io/gh/valhalla/valhalla/branch/master/graph/badge.svg)](https://codecov.io/gh/valhalla/valhalla) |
+| Linux/MacOs | Windows | Code Coverage |
+| ----------- | ------- | ------------- |
+| [![Circle CI](https://circleci.com/gh/valhalla/valhalla.svg?style=svg)](https://circleci.com/gh/valhalla/valhalla) | [![Build status](https://ci.appveyor.com/api/projects/status/6w7emulgcjweu457?svg=true)](https://ci.appveyor.com/project/kevinkreiser/valhalla) | [![codecov](https://codecov.io/gh/valhalla/valhalla/branch/master/graph/badge.svg)](https://codecov.io/gh/valhalla/valhalla) |
 
 
 
@@ -102,6 +102,8 @@ curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | 
 nvm use install 10 && nvm use 10 # must use node 8.11.1 and up because of N-API
 npm install --ignore-scripts
 ```
+
+For instructions on installing Valhalla on Ubuntu 18.04.x see this [script](scripts/Ubuntu_Bionic_Install.sh).
 
 To install on macOS, you need to install its dependencies with [Homebrew](http://brew.sh):
 

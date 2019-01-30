@@ -28,4 +28,6 @@ valhalla_module(NAME loki
     valhalla::skadi
     valhalla::sif
     valhalla::proto
+    ${valhalla_protobuf_targets}
+    Boost::boost
     libprime_server)
