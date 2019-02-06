@@ -25,7 +25,7 @@ Build Status
 
 | Linux/MacOs | Windows | Code Coverage |
 | ----------- | ------- | ------------- |
-| [![Circle CI](https://circleci.com/gh/valhalla/valhalla.svg?style=svg)](https://circleci.com/gh/valhalla/valhalla) | [![Build status](https://ci.appveyor.com/api/projects/status/6w7emulgcjweu457?svg=true)](https://ci.appveyor.com/project/kevinkreiser/valhalla) | [![codecov](https://codecov.io/gh/valhalla/valhalla/branch/master/graph/badge.svg)](https://codecov.io/gh/valhalla/valhalla) |
+| [![Circle CI](https://circleci.com/gh/valhalla/valhalla.svg?style=svg)](https://circleci.com/gh/valhalla/valhalla) | [![Build status](https://ci.appveyor.com/api/projects/status/6w7emulgcjweu457/branch/master?svg=true)](https://ci.appveyor.com/project/kevinkreiser/valhalla/branch/master) | [![codecov](https://codecov.io/gh/valhalla/valhalla/branch/master/graph/badge.svg)](https://codecov.io/gh/valhalla/valhalla) |
 
 
 
@@ -67,7 +67,7 @@ The Valhalla organization is comprised of several library modules each responsib
 Documentation
 --------
 
-Technical documentation for the various components of the library can be found here: [docs](docs). Service API documentation as well as links to a variety of technical descriptions are provided within the [valhalla-docs](https://github.com/valhalla/valhalla-docs) repository.
+Documentation is stored in the `docs/` folder in this GitHub repository. It can be viewed at [valhalla.readthedocs.io](https://valhalla.readthedocs.io/).
 
 Get Valhalla from Personal Package Archive (PPA)
 ------------------------------------------------
